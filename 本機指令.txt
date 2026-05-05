@@ -1,0 +1,10 @@
+Supabase
+Com2uS123456!!
+
+
+cd swc-voting-app
+npm run dev
+
+git add .
+git commit -m "style: update number font and decimals"
+git push

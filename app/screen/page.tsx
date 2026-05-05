@@ -30,14 +30,16 @@ export default function StageScreenPage() {
   const p1Rate = total === 0 ? 50 : (match.p1_votes / total) * 100;
   const p2Rate = total === 0 ? 50 : (match.p2_votes / total) * 100;
 
-  // 動態字體大小計算邏輯：偵測兩邊最長的名字
+  // 1. 動態字體大小計算邏輯：偵測兩邊最長的名字
   const maxNameLen = Math.max(match.p1_name?.length || 0, match.p2_name?.length || 0);
-  let nameTextClass = "text-6xl"; // 預設大小 (適合 2~4 個字)
-  if (maxNameLen >= 8) {
-    nameTextClass = "text-4xl"; // 超長名字縮小
-  } else if (maxNameLen >= 5) {
-    nameTextClass = "text-5xl"; // 中等長度縮小
-  }
+  let nameTextClass = "text-6xl";
+  if (maxNameLen >= 8) nameTextClass = "text-4xl";
+  else if (maxNameLen >= 5) nameTextClass = "text-5xl";
+
+  // 2. 將票數拆解為「整數」與「小數」部位
+  // 例如 39.4 -> 整數 "39", 小數 "4"
+  const [p1Int, p1Dec] = p1Rate.toFixed(1).split('.');
+  const [p2Int, p2Dec] = p2Rate.toFixed(1).split('.');
 
   return (
     <div className="h-screen w-screen bg-[#050505] flex overflow-hidden font-sans select-none relative">
@@ -45,10 +47,22 @@ export default function StageScreenPage() {
       {/* ================= 左半邊：藍方 ================= */}
       <div className="relative w-1/2 h-full z-10">
         <div className="absolute right-0 top-0 w-[85%] h-[75%] bg-gradient-to-b from-[#0a38b3] to-[#051c5e] pt-10 shadow-[20px_0_50px_rgba(0,0,0,0.5)]">
-          <motion.div key={`p1-${p1Rate}`} initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="absolute top-12 left-12 text-white flex items-baseline z-0 opacity-80">
-            <span className="text-[200px] font-black leading-none tracking-tighter drop-shadow-[0_10px_20px_rgba(0,0,0,0.3)]">{p1Rate.toFixed(0)}</span>
-            <span className="text-7xl font-bold ml-2">%</span>
+          
+          {/* 💡 修改重點：瘦長型大數字 + 小數點縮小 */}
+          <motion.div 
+            key={`p1-${p1Rate}`} 
+            initial={{ scale: 0.95, opacity: 0 }} 
+            animate={{ scale: 1, opacity: 1 }} 
+            className="absolute top-16 left-8 text-white flex items-baseline z-0 opacity-90 scale-y-[1.15] origin-bottom-left"
+          >
+            {/* 巨大整數 */}
+            <span className="text-[280px] font-black leading-none tracking-tighter drop-shadow-[0_10px_20px_rgba(0,0,0,0.3)]">{p1Int}</span>
+            {/* 縮小的小數點與數字 */}
+            <span className="text-[120px] font-black leading-none drop-shadow-[0_10px_20px_rgba(0,0,0,0.3)] tracking-tighter">.{p1Dec}</span>
+            {/* 縮小的百分比符號 */}
+            <span className="text-[70px] font-bold ml-2 mb-4 opacity-80">%</span>
           </motion.div>
+
         </div>
         <div className="absolute right-0 top-[75%] w-full h-[25%] bg-gradient-to-b from-[#03113d] to-[#010617] shadow-[20px_0_50px_rgba(0,0,0,0.5)] overflow-hidden" style={{ clipPath: 'polygon(15% 0, 100% 0, 100% 100%, 0% 100%)' }}>
            <div className="absolute top-0 left-0 w-full h-24 bg-gradient-to-b from-black/80 to-transparent"></div>
@@ -60,7 +74,6 @@ export default function StageScreenPage() {
             )}
           </div>
           <div className="text-center z-30 -translate-x-20">
-            {/* 套用動態字體 Class */}
             <h2 className={`${nameTextClass} font-black text-white uppercase tracking-widest drop-shadow-[0_5px_15px_rgba(0,0,0,0.9)] mb-2 transition-all`}>{match.p1_name}</h2>
             <div className="text-3xl font-bold text-blue-300 tracking-widest drop-shadow-md">{match.p1_votes} <span className="text-xl opacity-70">VOTES</span></div>
           </div>
@@ -70,10 +83,22 @@ export default function StageScreenPage() {
       {/* ================= 右半邊：紅方 ================= */}
       <div className="relative w-1/2 h-full z-0">
         <div className="absolute left-0 top-0 w-[85%] h-[75%] bg-gradient-to-b from-[#c20a1f] to-[#6b030e] pt-10 shadow-[-20px_0_50px_rgba(0,0,0,0.5)]">
-          <motion.div key={`p2-${p2Rate}`} initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="absolute top-12 right-12 text-white flex items-baseline z-0 opacity-80">
-            <span className="text-[200px] font-black leading-none tracking-tighter drop-shadow-[0_10px_20px_rgba(0,0,0,0.3)]">{p2Rate.toFixed(0)}</span>
-            <span className="text-7xl font-bold ml-2">%</span>
+          
+          {/* 💡 修改重點：瘦長型大數字 + 小數點縮小 */}
+          <motion.div 
+            key={`p2-${p2Rate}`} 
+            initial={{ scale: 0.95, opacity: 0 }} 
+            animate={{ scale: 1, opacity: 1 }} 
+            className="absolute top-16 right-8 text-white flex items-baseline z-0 opacity-90 scale-y-[1.15] origin-bottom-right"
+          >
+            {/* 巨大整數 */}
+            <span className="text-[280px] font-black leading-none tracking-tighter drop-shadow-[0_10px_20px_rgba(0,0,0,0.3)]">{p2Int}</span>
+            {/* 縮小的小數點與數字 */}
+            <span className="text-[120px] font-black leading-none drop-shadow-[0_10px_20px_rgba(0,0,0,0.3)] tracking-tighter">.{p2Dec}</span>
+            {/* 縮小的百分比符號 */}
+            <span className="text-[70px] font-bold ml-2 mb-4 opacity-80">%</span>
           </motion.div>
+
         </div>
         <div className="absolute left-0 top-[75%] w-full h-[25%] bg-gradient-to-b from-[#3b0107] to-[#120002] shadow-[-20px_0_50px_rgba(0,0,0,0.5)] overflow-hidden" style={{ clipPath: 'polygon(0 0, 85% 0, 100% 100%, 0% 100%)' }}>
            <div className="absolute top-0 left-0 w-full h-24 bg-gradient-to-b from-black/80 to-transparent"></div>
@@ -85,7 +110,6 @@ export default function StageScreenPage() {
             )}
           </div>
           <div className="text-center z-30 translate-x-20">
-            {/* 套用動態字體 Class */}
             <h2 className={`${nameTextClass} font-black text-white uppercase tracking-widest drop-shadow-[0_5px_15px_rgba(0,0,0,0.9)] mb-2 transition-all`}>{match.p2_name}</h2>
             <div className="text-3xl font-bold text-red-300 tracking-widest drop-shadow-md">{match.p2_votes} <span className="text-xl opacity-70">VOTES</span></div>
           </div>
@@ -93,7 +117,6 @@ export default function StageScreenPage() {
       </div>
 
       {/* ================= 畫面中央裝飾：VS ================= */}
-      {/* 提升高度至 top-[50%] (正中央) */}
       <div className="absolute top-[50%] left-1/2 -translate-x-1/2 -translate-y-1/2 z-30 pointer-events-none">
         <div className="text-[90px] px-4 font-black italic text-transparent bg-clip-text bg-gradient-to-b from-white to-gray-400 drop-shadow-[0_0_30px_rgba(0,0,0,0.8)]">
           VS
@@ -108,7 +131,6 @@ export default function StageScreenPage() {
       </div>
 
       {/* ================= 右上角：自動生成 QRCode 掃碼區 ================= */}
-      {/* 高度下調至 top-[35%]，約在數字 50% 的下半部 */}
       {originUrl && (
         <motion.div 
           initial={{ opacity: 0, x: 50 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 1 }}

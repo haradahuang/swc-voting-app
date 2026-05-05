@@ -2,137 +2,169 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { motion } from 'framer-motion';
+import QRCode from 'react-qr-code';
 
-export default function MobileVotingPage() {
+export default function StageScreenPage() {
   const [match, setMatch] = useState<any>(null);
-  const [hasVoted, setHasVoted] = useState(false);
-  const [votedFor, setVotedFor] = useState<string | null>(null);
+  const [originUrl, setOriginUrl] = useState<string>('');
 
   useEffect(() => {
-    const localVote = localStorage.getItem('swc_voted_p');
-    if (localVote) {
-      setHasVoted(true);
-      setVotedFor(localVote);
+    if (typeof window !== 'undefined') {
+      setOriginUrl(window.location.origin);
     }
-
-    const fetchMatch = async () => {
-      const { data } = await supabase.from('active_match').select('*').eq('id', 1).single();
-      setMatch(data);
+    const fetchMatch = () => {
+      supabase.from('active_match').select('*').eq('id', 1).single().then(({ data }) => setMatch(data));
     };
     fetchMatch();
-
-    const channel = supabase.channel('mobile-realtime')
-      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'active_match' }, (payload) => {
-        setMatch(payload.new);
-      })
+    
+    const channel = supabase.channel('realtime-screen')
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'active_match' }, (p) => setMatch(p.new))
       .subscribe();
-
+      
     return () => { supabase.removeChannel(channel); };
   }, []);
 
-  const handleVote = async (player: 'p1' | 'p2') => {
-    if (hasVoted) return;
-    setHasVoted(true);
-    setVotedFor(player);
-    localStorage.setItem('swc_voted_p', player);
-    await supabase.rpc('increment_vote', { player });
-  };
-
-  if (!match) return <div className="min-h-screen bg-[#050505] flex items-center justify-center text-white">Loading...</div>;
+  if (!match) return <div className="min-h-screen bg-[#050505]" />;
 
   const total = match.p1_votes + match.p2_votes;
   const p1Rate = total === 0 ? 50 : (match.p1_votes / total) * 100;
   const p2Rate = total === 0 ? 50 : (match.p2_votes / total) * 100;
 
-  return (
-    <div className="min-h-screen bg-[#020617] text-white font-sans flex flex-col items-center justify-center p-6 relative overflow-hidden">
-      {/* 科技感背景光暈 */}
-      <div className="absolute top-0 left-0 w-full md:w-1/2 h-full bg-blue-900/10 blur-[120px] pointer-events-none"></div>
-      <div className="absolute top-0 right-0 w-full md:w-1/2 h-full bg-red-900/10 blur-[120px] pointer-events-none"></div>
+  // 動態字體大小計算邏輯
+  const maxNameLen = Math.max(match.p1_name?.length || 0, match.p2_name?.length || 0);
+  let nameTextClass = "text-6xl";
+  if (maxNameLen >= 8) nameTextClass = "text-4xl";
+  else if (maxNameLen >= 5) nameTextClass = "text-5xl";
 
-      <div className="z-10 w-full max-w-5xl flex flex-col items-center gap-8 md:gap-12">
+  // 將票數拆解為「整數」與「小數」部位
+  const [p1Int, p1Dec] = p1Rate.toFixed(1).split('.');
+  const [p2Int, p2Dec] = p2Rate.toFixed(1).split('.');
+
+  return (
+    <div className="h-screen w-screen bg-[#050505] flex overflow-hidden font-sans select-none relative">
+      
+      {/* ================= 左半邊：藍方 ================= */}
+      <div className="relative w-1/2 h-full z-10">
         
-        {/* 標題 Header */}
-        <div className="text-center">
-          <h1 className="text-4xl md:text-5xl font-black italic text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-yellow-200 uppercase tracking-widest drop-shadow-[0_0_15px_rgba(250,204,21,0.5)]">
-            Live Prediction
-          </h1>
-          <p className="text-zinc-400 text-sm md:text-base mt-2 uppercase tracking-widest">{hasVoted ? 'Thank you for voting!' : 'Select your winner'}</p>
+        {/* 💡 區塊凝縮：垂直牆面寬度大幅縮減為極致的 [35%]，留給中間 VS 更大擴張空間 */}
+        <div className="absolute right-0 top-0 w-[35%] h-[75%] bg-gradient-to-b from-[#0a38b3] to-[#051c5e] pt-10 shadow-[20px_0_50px_rgba(0,0,0,0.5)]">
+          
+          {/* 💡 文字極致拉長：由 scale-y-[1.6] 狂飆至 scale-y-[2.1] origin-bottom-left， reposition */}
+          <motion.div 
+            key={`p1-${p1Rate}`} 
+            initial={{ scale: 0.95, opacity: 0 }} 
+            animate={{ scale: 1, opacity: 1 }} 
+            className="absolute top-12 left-4 text-white flex items-baseline z-0 opacity-90 scale-y-[2.1] origin-bottom-left"
+          >
+            {/* 巨大整數 (字體改細一點font-bold更精緻) */}
+            <span className="text-[260px] font-bold leading-none tracking-tight drop-shadow-[0_10px_20px_rgba(0,0,0,0.3)]">{p1Int}</span>
+            {/* 縮小的小數點與數字 */}
+            <span className="text-[100px] font-bold leading-none drop-shadow-[0_10px_20px_rgba(0,0,0,0.3)] tracking-tight">.{p1Dec}</span>
+            {/* 更小的百分比符號 */}
+            <span className="text-[50px] font-bold ml-2 mb-4 opacity-80">%</span>
+          </motion.div>
         </div>
 
-        {/* 投票區塊 (手機版上下疊加，PC版左右並排) */}
-        <div className="flex flex-col md:flex-row w-full items-stretch justify-center gap-6 md:gap-10">
-          
-          {/* ================= 藍方選手 ================= */}
-          <motion.button 
-            whileTap={!hasVoted ? { scale: 0.95 } : {}}
-            onClick={() => handleVote('p1')}
-            disabled={hasVoted}
-            className={`relative overflow-hidden rounded-3xl p-5 md:p-8 border-2 flex flex-row md:flex-col items-center md:justify-center gap-6 transition-all duration-300 w-full md:w-[400px] text-left md:text-center
-              ${hasVoted && votedFor !== 'p1' ? 'border-zinc-800 bg-zinc-900/50 opacity-40 grayscale' : ''}
-              ${hasVoted && votedFor === 'p1' ? 'border-blue-400 bg-blue-900/40 shadow-[0_0_30px_rgba(59,130,246,0.5)]' : ''}
-              ${!hasVoted ? 'border-blue-600 bg-blue-950/60 hover:bg-blue-900/80 shadow-[0_0_20px_rgba(59,130,246,0.2)]' : ''}
-            `}
-          >
-            {/* 圖片容器：手機版固定比例，PC版放大呈現全身 */}
-            <div className="w-24 h-32 md:w-full md:h-80 rounded-2xl overflow-hidden bg-black/50 shrink-0 border border-white/10 relative">
-              <img 
-                src={match.p1_avatar} 
-                // 捨棄大螢幕的 translate，統一使用 top 對齊，確保臉部出現
-                className="absolute inset-0 w-full h-full object-cover object-top" 
-                alt={match.p1_name}
-                onError={(e) => e.currentTarget.style.display = 'none'}
-              />
-            </div>
-            <div className="flex-1 flex flex-col justify-center">
-              <div className="text-2xl md:text-4xl font-black text-white uppercase tracking-wider mb-2">{match.p1_name}</div>
-              {hasVoted ? (
-                <div className="text-4xl md:text-5xl font-bold text-blue-400">{p1Rate.toFixed(0)}%</div>
-              ) : (
-                <div className="text-blue-400 text-sm md:text-base font-bold bg-blue-950/80 px-4 py-2 rounded-full inline-block">TAP TO VOTE</div>
-              )}
-            </div>
-          </motion.button>
+        {/* 3D 延伸地板 (角度加大，搭配牆面35%) */}
+        <div 
+          className="absolute right-0 top-[75%] w-full h-[25%] bg-gradient-to-b from-[#051c5e] to-[#0a38b3] overflow-hidden shadow-[20px_0_50px_rgba(0,0,0,0.5)]" 
+          style={{ clipPath: 'polygon(35% 0, 100% 0, 100% 100%, 0% 100%)' }}
+        >
+           {/* 遮罩優化：只在最頂部有一條淺淺陰影 */}
+           <div className="absolute top-0 left-0 w-full h-10 bg-gradient-to-b from-black/50 to-transparent"></div>
+        </div>
 
-          {/* VS 分隔線 (PC版顯示中央VS，手機版顯示橫線) */}
-          <div className="flex md:flex-col items-center justify-center gap-4 opacity-50 md:opacity-80">
-            <div className="h-[1px] md:w-[1px] w-full md:h-20 bg-gradient-to-r md:bg-gradient-to-b from-transparent to-white"></div>
-            <div className="text-2xl md:text-5xl font-black italic text-white drop-shadow-lg">VS</div>
-            <div className="h-[1px] md:w-[1px] w-full md:h-20 bg-gradient-to-l md:bg-gradient-to-t from-transparent to-white"></div>
+        {/* 前景內容層 (人物 + 名字 + 票數) reposition with narrower wall */}
+        <div className="absolute right-0 top-0 w-[85%] h-full pointer-events-none flex flex-col items-center justify-end pb-[6%] z-20">
+          <div className="w-[600px] h-[650px] mb-2 relative flex items-center justify-center -translate-x-16">
+            {match.p1_avatar && (
+              <img src={match.p1_avatar} style={{ transform: `translate(${match.p1_x - 50}%, ${match.p1_y - 50}%) scale(${match.p1_size / 100})` }} className="absolute w-full h-full object-contain drop-shadow-[0_20px_30px_rgba(0,0,0,0.8)]" alt={match.p1_name} onError={(e) => e.currentTarget.style.display = 'none'} />
+            )}
           </div>
-
-          {/* ================= 紅方選手 ================= */}
-          <motion.button 
-            whileTap={!hasVoted ? { scale: 0.95 } : {}}
-            onClick={() => handleVote('p2')}
-            disabled={hasVoted}
-            className={`relative overflow-hidden rounded-3xl p-5 md:p-8 border-2 flex flex-row md:flex-col items-center md:justify-center gap-6 transition-all duration-300 w-full md:w-[400px] text-left md:text-center
-              ${hasVoted && votedFor !== 'p2' ? 'border-zinc-800 bg-zinc-900/50 opacity-40 grayscale' : ''}
-              ${hasVoted && votedFor === 'p2' ? 'border-red-400 bg-red-900/40 shadow-[0_0_30px_rgba(239,68,68,0.5)]' : ''}
-              ${!hasVoted ? 'border-red-600 bg-red-950/60 hover:bg-red-900/80 shadow-[0_0_20px_rgba(239,68,68,0.2)]' : ''}
-            `}
-          >
-            {/* 圖片容器：手機版固定比例，PC版放大呈現全身 */}
-            <div className="w-24 h-32 md:w-full md:h-80 rounded-2xl overflow-hidden bg-black/50 shrink-0 border border-white/10 relative">
-              <img 
-                src={match.p2_avatar} 
-                className="absolute inset-0 w-full h-full object-cover object-top" 
-                alt={match.p2_name}
-                onError={(e) => e.currentTarget.style.display = 'none'}
-              />
-            </div>
-            <div className="flex-1 flex flex-col justify-center">
-              <div className="text-2xl md:text-4xl font-black text-white uppercase tracking-wider mb-2">{match.p2_name}</div>
-              {hasVoted ? (
-                <div className="text-4xl md:text-5xl font-bold text-red-400">{p2Rate.toFixed(0)}%</div>
-              ) : (
-                <div className="text-red-400 text-sm md:text-base font-bold bg-red-950/80 px-4 py-2 rounded-full inline-block">TAP TO VOTE</div>
-              )}
-            </div>
-          </motion.button>
-
+          <div className="text-center z-30 -translate-x-16">
+            <h2 className={`${nameTextClass} font-black text-white uppercase tracking-widest drop-shadow-[0_5px_15px_rgba(0,0,0,0.9)] mb-2 transition-all`}>{match.p1_name}</h2>
+            <div className="text-3xl font-bold text-blue-300 tracking-widest drop-shadow-md">{match.p1_votes} <span className="text-xl opacity-70">VOTES</span></div>
+          </div>
         </div>
       </div>
+
+      {/* ================= 右半邊：紅方 ================= */}
+      <div className="relative w-1/2 h-full z-0">
+        
+        {/* 💡 區塊凝縮：垂直牆面寬度大幅縮減為極致的 [35%] */}
+        <div className="absolute left-0 top-0 w-[35%] h-[75%] bg-gradient-to-b from-[#c20a1f] to-[#6b030e] pt-10 shadow-[-20px_0_50px_rgba(0,0,0,0.5)]">
+          
+          {/* 💡 文字極致拉長：scale-y-[2.1] origin-bottom-right, reposition */}
+          <motion.div 
+            key={`p2-${p2Rate}`} 
+            initial={{ scale: 0.95, opacity: 0 }} 
+            animate={{ scale: 1, opacity: 1 }} 
+            className="absolute top-12 right-4 text-white flex items-baseline z-0 opacity-90 scale-y-[2.1] origin-bottom-right"
+          >
+            {/* 巨大整數 */}
+            <span className="text-[260px] font-bold leading-none tracking-tight drop-shadow-[0_10px_20px_rgba(0,0,0,0.3)]">{p2Int}</span>
+            {/* 縮小的小數點與數字 */}
+            <span className="text-[100px] font-bold leading-none drop-shadow-[0_10px_20px_rgba(0,0,0,0.3)] tracking-tight">.{p2Dec}</span>
+            {/* 更小的百分比符號 */}
+            <span className="text-[50px] font-bold ml-2 mb-4 opacity-80">%</span>
+          </motion.div>
+        </div>
+
+        {/* 3D 延伸地板 (搭配牆面35%, 65% 向外擴展) */}
+        <div 
+          className="absolute left-0 top-[75%] w-full h-[25%] bg-gradient-to-b from-[#6b030e] to-[#c20a1f] overflow-hidden shadow-[-20px_0_50px_rgba(0,0,0,0.5)]" 
+          style={{ clipPath: 'polygon(0 0, 65% 0, 100% 100%, 0% 100%)' }}
+        >
+           {/* 遮罩優化：只在最頂部有一條淺淺陰影 */}
+           <div className="absolute top-0 left-0 w-full h-10 bg-gradient-to-b from-black/50 to-transparent"></div>
+        </div>
+
+        {/* 前景內容層 (人物 + 名字 + 票數) reposition with narrower wall */}
+        <div className="absolute left-0 top-0 w-[85%] h-full pointer-events-none flex flex-col items-center justify-end pb-[6%] z-20">
+          <div className="w-[600px] h-[650px] mb-2 relative flex items-center justify-center translate-x-16">
+            {match.p2_avatar && (
+              <img src={match.p2_avatar} style={{ transform: `translate(${match.p2_x - 50}%, ${match.p2_y - 50}%) scale(${match.p2_size / 100})` }} className="absolute w-full h-full object-contain drop-shadow-[0_20px_30px_rgba(0,0,0,0.8)]" alt={match.p2_name} onError={(e) => e.currentTarget.style.display = 'none'} />
+            )}
+          </div>
+          <div className="text-center z-30 translate-x-16">
+            <h2 className={`${nameTextClass} font-black text-white uppercase tracking-widest drop-shadow-[0_5px_15px_rgba(0,0,0,0.9)] mb-2 transition-all`}>{match.p2_name}</h2>
+            <div className="text-3xl font-bold text-red-300 tracking-widest drop-shadow-md">{match.p2_votes} <span className="text-xl opacity-70">VOTES</span></div>
+          </div>
+        </div>
+      </div>
+
+      {/* ================= 畫面中央裝飾：VS ================= */}
+      {/* Position high to leave space below */}
+      <div className="absolute top-[40%] left-1/2 -translate-x-1/2 -translate-y-1/2 z-30 pointer-events-none">
+        <div className="text-[90px] px-4 font-black italic text-transparent bg-clip-text bg-gradient-to-b from-white to-gray-400 drop-shadow-[0_0_30px_rgba(0,0,0,0.8)]">
+          VS
+        </div>
+      </div>
+
+      {/* ================= 頂部標籤 ================= */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 z-30 bg-black px-8 py-2 rounded-b-xl border-b border-white/10 shadow-2xl flex flex-col items-center">
+        <h1 className="text-sm font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-yellow-200 tracking-[0.4em] uppercase">
+          Live Prediction
+        </h1>
+      </div>
+
+      {/* ================= 右下角：自動生成 QRCode 掃碼區 ================= */}
+      {/* Large Move Down for cleanliness */}
+      {originUrl && (
+        <motion.div 
+          initial={{ opacity: 0, x: 50 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 1 }}
+          className="absolute bottom-12 right-12 z-40 bg-black/80 backdrop-blur-xl p-4 rounded-3xl border border-red-900/50 shadow-[0_0_40px_rgba(0,0,0,0.8)] flex flex-col items-center"
+        >
+          <div className="flex items-center gap-2 mb-3">
+             <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></div>
+             <h3 className="text-white font-bold text-sm tracking-widest uppercase">Scan To Vote</h3>
+          </div>
+          <div className="bg-white p-2 rounded-2xl shadow-inner">
+            <QRCode value={originUrl} size={110} level="H" />
+          </div>
+        </motion.div>
+      )}
+
     </div>
   );
 }
