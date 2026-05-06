@@ -12,7 +12,7 @@ export default function StreamOverlayPage() {
     };
     fetchMatch();
     
-    const channel = supabase.channel('realtime-stream-overlay')
+    const channel = supabase.channel('realtime-stream')
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'active_match' }, (p) => setMatch(p.new))
       .subscribe();
       
@@ -25,96 +25,111 @@ export default function StreamOverlayPage() {
   const p1Rate = total === 0 ? 50 : (match.p1_votes / total) * 100;
   const p2Rate = total === 0 ? 50 : (match.p2_votes / total) * 100;
 
+  // 拆解小數點
   const [p1Int, p1Dec] = p1Rate.toFixed(1).split('.');
   const [p2Int, p2Dec] = p2Rate.toFixed(1).split('.');
 
   return (
-    <div className="w-[1920px] h-[320px] bg-transparent flex items-end overflow-hidden font-sans select-none relative">
-      
-      {/* 🔵 左半邊：藍方區塊 */}
-      <div className="flex-1 h-[280px] bg-gradient-to-r from-[#0a267a] to-[#0f3cc9] flex relative overflow-hidden border-t-4 border-blue-400">
-        
-        {/* 💡 選手頭像：縮放並融入背景 */}
-        <div className="absolute left-0 top-0 w-[400px] h-full overflow-hidden opacity-40 mix-blend-luminosity">
-          {match.p1_avatar && (
-            <img 
-              src={match.p1_avatar} 
-              className="w-full h-full object-cover object-top scale-[1.8] origin-top" 
-              alt="p1" 
-            />
-          )}
-        </div>
+    // 💡 嚴格鎖定 1920x320，使用 Flex 橫向排列，絕對不會疊字
+    <div className="w-[1920px] h-[320px] bg-transparent flex overflow-hidden font-sans select-none drop-shadow-2xl">
 
-        {/* 數據內容 (靠右對齊中央) */}
-        <div className="flex-1 flex flex-col justify-center items-end px-12 z-10">
-           <h2 className="text-4xl font-black text-white italic tracking-widest mb-1 drop-shadow-lg uppercase">
-             {match.p1_name}
-           </h2>
-           <div className="flex items-baseline gap-6">
-             <div className="text-2xl font-bold text-blue-200 opacity-80 tracking-tighter">
-               {match.p1_votes} <span className="text-sm">VOTES</span>
-             </div>
-             <motion.div 
-               key={`st-p1-${match.p1_votes}`}
-               initial={{ x: -20, opacity: 0 }} animate={{ x: 0, opacity: 1 }}
-               className="flex items-baseline text-white scale-y-[1.8] origin-bottom tracking-tighter"
-             >
-               <span className="text-[110px] font-black leading-none">{p1Int}</span>
-               <span className="text-[45px] font-black leading-none">.{p1Dec}</span>
-               <span className="text-[25px] font-bold ml-1 opacity-70">%</span>
-             </motion.div>
-           </div>
-        </div>
+      {/* ================= 1. 最左側：LIVE VOTE 標題區 (寬度 220px) ================= */}
+      <div className="w-[220px] h-full bg-white flex flex-col items-center justify-center border-r-[8px] border-[#0a267a] shrink-0 z-20">
+         <div className="text-4xl font-black text-[#0f172a] leading-none mb-3 text-center tracking-wide">
+           LIVE<br/>VOTE
+         </div>
+         <div className="bg-black text-yellow-400 font-bold px-4 py-1.5 rounded-md text-sm tracking-widest shadow-md">
+           SWC 2025
+         </div>
       </div>
 
-      {/* ⚡ 中央控制區：LIVE VOTE (300px) */}
-      <div className="w-[300px] h-[300px] bg-[#05050a] flex flex-col items-center justify-center relative z-30 border-t-4 border-yellow-500 shadow-[0_0_50px_rgba(0,0,0,1)]">
-        <div className="absolute -top-1 w-full h-1 bg-yellow-400 shadow-[0_0_15px_rgba(250,204,21,0.8)]"></div>
-        <div className="text-5xl font-black italic text-white leading-tight tracking-tighter text-center">
-          LIVE<br/>VOTE
-        </div>
-        <div className="mt-3 px-4 py-1 bg-yellow-500 text-black text-sm font-black tracking-[0.3em] rounded-sm">
-          SWC 2025
-        </div>
-        {/* 裝飾線 */}
-        <div className="absolute left-0 h-2/3 w-[1px] bg-white/10"></div>
-        <div className="absolute right-0 h-2/3 w-[1px] bg-white/10"></div>
+      {/* ================= 2. 藍方選手頭像區 (寬度 300px) ================= */}
+      <div className="w-[300px] h-full bg-gradient-to-b from-[#f8fafc] to-[#e2e8f0] relative shrink-0 shadow-inner overflow-hidden z-10 border-r border-black/10">
+         {/* 💡 完美套用後台的 X, Y, Size 參數控制 */}
+         <div className="w-full h-full relative flex items-center justify-center">
+            {match.p1_avatar && (
+              <img 
+                src={match.p1_avatar} 
+                style={{ 
+                  transform: `translate(${match.p1_x - 50}%, ${match.p1_y - 50}%) scale(${match.p1_size / 100})` 
+                }} 
+                className="absolute w-[600px] h-[600px] object-contain max-w-none" 
+                alt="p1" 
+              />
+            )}
+         </div>
       </div>
 
-      {/* 🔴 右半邊：紅方區塊 */}
-      <div className="flex-1 h-[280px] bg-gradient-to-l from-[#7a0a16] to-[#c90f22] flex flex-row-reverse relative overflow-hidden border-t-4 border-red-400">
-        
-        {/* 💡 選手頭像 */}
-        <div className="absolute right-0 top-0 w-[400px] h-full overflow-hidden opacity-40 mix-blend-luminosity">
-          {match.p2_avatar && (
-            <img 
-              src={match.p2_avatar} 
-              className="w-full h-full object-cover object-top scale-[1.8] origin-top" 
-              alt="p2" 
-            />
-          )}
-        </div>
-
-        {/* 數據內容 (靠左對齊中央) */}
-        <div className="flex-1 flex flex-col justify-center items-start px-12 z-10 text-left">
-           <h2 className="text-4xl font-black text-white italic tracking-widest mb-1 drop-shadow-lg uppercase">
-             {match.p2_name}
-           </h2>
-           <div className="flex items-baseline gap-6 flex-row-reverse">
-             <div className="text-2xl font-bold text-red-200 opacity-80 tracking-tighter">
-               {match.p2_votes} <span className="text-sm">VOTES</span>
-             </div>
-             <motion.div 
-               key={`st-p2-${match.p2_votes}`}
-               initial={{ x: 20, opacity: 0 }} animate={{ x: 0, opacity: 1 }}
-               className="flex items-baseline text-white scale-y-[1.8] origin-bottom tracking-tighter"
-             >
-               <span className="text-[110px] font-black leading-none">{p2Int}</span>
-               <span className="text-[45px] font-black leading-none">.{p2Dec}</span>
-               <span className="text-[25px] font-bold ml-1 opacity-70">%</span>
-             </motion.div>
+      {/* ================= 3. 藍方數據區 (自適應寬度 flex-1) ================= */}
+      <div className="flex-1 h-full bg-[#0a267a] flex flex-col justify-center px-12 relative z-20 shadow-[10px_0_20px_rgba(0,0,0,0.3)]">
+         
+         {/* 名字與標籤 */}
+         <div className="flex items-center gap-4 mb-2">
+           <span className="bg-white text-[#0a267a] font-black px-2.5 py-1 rounded-md text-sm tracking-widest shadow-sm">BLUE</span>
+           <span className="text-4xl font-black text-white tracking-widest drop-shadow-md">{match.p1_name}</span>
+         </div>
+         
+         {/* 百分比與票數 */}
+         <div className="flex items-baseline gap-6">
+           <motion.div 
+             key={`p1-rate-${match.p1_votes}`}
+             initial={{ scale: 1.05 }} animate={{ scale: 1 }}
+             className="flex items-baseline text-white drop-shadow-[0_4px_10px_rgba(0,0,0,0.5)] tracking-tighter"
+           >
+             <span className="text-[110px] font-black leading-none">{p1Int}</span>
+             <span className="text-[50px] font-black leading-none">.{p1Dec}</span>
+             <span className="text-[35px] font-black ml-1 opacity-90">%</span>
+           </motion.div>
+           <div className="text-[#93c5fd] font-bold text-2xl tracking-widest uppercase">
+             {match.p1_votes} <span className="text-lg opacity-80">VOTES</span>
            </div>
-        </div>
+         </div>
+
+      </div>
+
+      {/* ================= 4. 紅方數據區 (自適應寬度 flex-1) ================= */}
+      {/* 靠右對齊 (items-end) */}
+      <div className="flex-1 h-full bg-[#9e0b18] flex flex-col justify-center items-end px-12 relative z-10 shadow-[-10px_0_20px_rgba(0,0,0,0.3)]">
+         
+         {/* 名字與標籤 */}
+         <div className="flex items-center gap-4 mb-2">
+           <span className="text-4xl font-black text-white tracking-widest drop-shadow-md">{match.p2_name}</span>
+           <span className="bg-white text-[#9e0b18] font-black px-2.5 py-1 rounded-md text-sm tracking-widest shadow-sm">RED</span>
+         </div>
+         
+         {/* 百分比與票數 (排版反轉) */}
+         <div className="flex items-baseline gap-6 flex-row-reverse">
+           <motion.div 
+             key={`p2-rate-${match.p2_votes}`}
+             initial={{ scale: 1.05 }} animate={{ scale: 1 }}
+             className="flex items-baseline text-white drop-shadow-[0_4px_10px_rgba(0,0,0,0.5)] tracking-tighter"
+           >
+             <span className="text-[110px] font-black leading-none">{p2Int}</span>
+             <span className="text-[50px] font-black leading-none">.{p2Dec}</span>
+             <span className="text-[35px] font-black ml-1 opacity-90">%</span>
+           </motion.div>
+           <div className="text-[#fca5a5] font-bold text-2xl tracking-widest uppercase">
+             {match.p2_votes} <span className="text-lg opacity-80">VOTES</span>
+           </div>
+         </div>
+
+      </div>
+
+      {/* ================= 5. 紅方選手頭像區 (寬度 300px) ================= */}
+      <div className="w-[300px] h-full bg-gradient-to-b from-[#f8fafc] to-[#e2e8f0] relative shrink-0 shadow-inner overflow-hidden z-20 border-l border-black/20 border-r-[8px] border-[#9e0b18]">
+         {/* 💡 完美套用後台的 X, Y, Size 參數控制 */}
+         <div className="w-full h-full relative flex items-center justify-center">
+            {match.p2_avatar && (
+              <img 
+                src={match.p2_avatar} 
+                style={{ 
+                  transform: `translate(${match.p2_x - 50}%, ${match.p2_y - 50}%) scale(${match.p2_size / 100})` 
+                }} 
+                className="absolute w-[600px] h-[600px] object-contain max-w-none" 
+                alt="p2" 
+              />
+            )}
+         </div>
       </div>
 
     </div>
