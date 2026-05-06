@@ -56,7 +56,7 @@ export default function StreamOverlayPage() {
                  />
                )}
             </div>
-            <div className="absolute inset-y-0 right-0 w-16 bg-gradient-to-l from-zinc-950 to-transparent pointer-events-none" />
+            {/* 💡 已徹底刪除產生黑線的漸層層 */}
          </div>
 
          {/* 數據區 */}
@@ -83,19 +83,15 @@ export default function StreamOverlayPage() {
          {/* 頂部金屬裝飾條 */}
          <div className="absolute top-0 w-full h-2 bg-gradient-to-r from-yellow-700 via-yellow-400 to-yellow-700 shadow-[0_0_15px_rgba(250,204,21,0.5)]"></div>
          
-         {/* 放大的 LIVE VOTE */}
-         <div className="text-[65px] font-black italic text-transparent bg-clip-text bg-gradient-to-b from-white to-gray-400 leading-[0.85] mb-4 text-center tracking-tighter drop-shadow-[0_0_20px_rgba(255,255,255,0.3)]">
+         {/* 💡 加上 pr-3 擴張右側空間，完美解決斜體 E 被切斷的問題 */}
+         <div className="text-[65px] font-black italic text-transparent bg-clip-text bg-gradient-to-b from-white to-gray-400 leading-[0.85] mb-4 text-center tracking-tighter drop-shadow-[0_0_20px_rgba(255,255,255,0.3)] pr-3">
            LIVE<br/>VOTE
          </div>
          
-         {/* 💡 後台自訂的賽事名稱 */}
+         {/* 後台自訂的賽事名稱 */}
          <div className="bg-yellow-500 text-black font-black px-6 py-1.5 rounded-sm text-sm tracking-[0.2em] shadow-[0_0_20px_rgba(234,179,8,0.5)]">
            {match.tournament_name || 'SWC 2025'}
          </div>
-         
-         {/* 兩側裝飾線 */}
-         <div className="absolute left-2 h-1/2 w-[1px] bg-white/10"></div>
-         <div className="absolute right-2 h-1/2 w-[1px] bg-white/10"></div>
       </div>
 
       {/* ================= 3. 紅方區塊 (右側) ================= */}
@@ -115,7 +111,7 @@ export default function StreamOverlayPage() {
                  />
                )}
             </div>
-            <div className="absolute inset-y-0 left-0 w-16 bg-gradient-to-r from-zinc-950 to-transparent pointer-events-none" />
+            {/* 💡 已徹底刪除產生黑線的漸層層 */}
          </div>
 
          {/* 數據區 */}
