@@ -39,12 +39,18 @@ export default function VotePage() {
   return (
     <div className="h-[100dvh] w-full bg-[#020205] flex flex-col overflow-hidden font-sans select-none text-white">
       
-      {/* 💡 頂部賽事標語 (放大字體與間距，加深背景黑邊以凸顯文字) */}
-      <div className="absolute top-0 w-full z-30 pt-10 pb-16 md:pt-16 md:pb-24 flex flex-col items-center bg-gradient-to-b from-black via-black/70 to-transparent pointer-events-none">
-        <h1 className="text-4xl md:text-6xl font-black italic text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-yellow-100 tracking-tighter uppercase drop-shadow-[0_0_20px_rgba(0,0,0,0.8)]">
+      {/* 💡 頂部賽事標語 
+          1. 加入 pr-3 解決斜體被切斷的問題
+          2. 手機版改為 relative (不使用 absolute)，解決上方選手被蓋住的問題
+          3. 放大字體至 text-[40px] 與 text-[70px]
+      */}
+      <div className="relative md:absolute top-0 w-full z-30 pt-8 pb-4 md:pt-16 md:pb-24 flex flex-col items-center bg-gradient-to-b from-black via-black/80 to-transparent pointer-events-none shrink-0">
+        <h1 className="text-[40px] md:text-[70px] leading-tight font-black italic text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-yellow-100 tracking-tighter uppercase drop-shadow-[0_0_20px_rgba(0,0,0,0.8)] pr-3">
           {match.tournament_name || 'SWC 2025'}
         </h1>
-        <div className="text-sm md:text-xl text-zinc-300 font-bold tracking-[0.4em] uppercase mt-2 drop-shadow-md">Live Prediction</div>
+        <div className="text-sm md:text-xl text-zinc-300 font-bold tracking-[0.4em] uppercase mt-1 drop-shadow-md">
+          Live Prediction
+        </div>
       </div>
 
       {/* ================= 投票對戰區 (手機上下, PC左右) ================= */}
@@ -58,28 +64,28 @@ export default function VotePage() {
         >
           <div className="absolute inset-0 bg-blue-900/20 z-0" />
           
+          {/* 頭像特寫連動 */}
           <div className="absolute inset-0 w-full h-full flex items-center justify-center">
             {match.p1_avatar && (
               <img 
                 src={match.p1_avatar} 
                 style={{ transform: `translate(${p1.x - 50}%, ${p1.y - 50}%) scale(${p1.size / 100})` }} 
-                className="w-full h-full object-contain transition-transform duration-500 group-active:scale-[1.1]" 
+                className="absolute w-[800px] h-[800px] object-contain max-w-none transition-transform duration-500 group-active:scale-[1.1]" 
                 alt="p1"
               />
             )}
           </div>
 
           <div className="absolute inset-0 bg-gradient-to-t from-blue-950 via-transparent to-transparent z-10" />
-          <div className="absolute bottom-4 md:bottom-12 left-0 w-full flex flex-col items-center z-20">
-             {/* 💡 已刪除 TEAM BLUE */}
-             <h2 className="text-3xl md:text-6xl font-black italic tracking-widest drop-shadow-[0_5px_15px_rgba(0,0,0,1)] uppercase">{match.p1_name}</h2>
-             <div className="mt-4 px-8 py-2 bg-blue-600 rounded-full text-sm font-black italic tracking-widest shadow-[0_0_20px_rgba(37,99,235,0.6)]">VOTE</div>
+          <div className="absolute bottom-6 md:bottom-12 left-0 w-full flex flex-col items-center z-20">
+             <h2 className="text-4xl md:text-6xl font-black italic tracking-widest drop-shadow-[0_5px_15px_rgba(0,0,0,1)] uppercase">{match.p1_name}</h2>
+             <div className="mt-4 px-10 py-2 bg-blue-600 rounded-full text-sm font-black italic tracking-widest shadow-[0_0_20px_rgba(37,99,235,0.6)]">VOTE</div>
           </div>
         </motion.div>
 
         {/* ⚔️ 中央 VS 標誌 */}
         <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-30">
-          <div className="bg-black text-white italic font-black text-2xl md:text-5xl rounded-full w-12 h-12 md:w-24 md:h-24 flex items-center justify-center border-2 border-white/20 shadow-[0_0_30px_rgba(0,0,0,1)]">
+          <div className="bg-black text-white italic font-black text-3xl md:text-5xl rounded-full w-14 h-14 md:w-24 md:h-24 flex items-center justify-center border-2 border-white/20 shadow-[0_0_30px_rgba(0,0,0,1)]">
             VS
           </div>
         </div>
@@ -92,22 +98,22 @@ export default function VotePage() {
         >
           <div className="absolute inset-0 bg-red-900/20 z-0" />
 
+          {/* 頭像特寫連動 */}
           <div className="absolute inset-0 w-full h-full flex items-center justify-center">
             {match.p2_avatar && (
               <img 
                 src={match.p2_avatar} 
                 style={{ transform: `translate(${p2.x - 50}%, ${p2.y - 50}%) scale(${p2.size / 100})` }} 
-                className="w-full h-full object-contain transition-transform duration-500 group-active:scale-[1.1]" 
+                className="absolute w-[800px] h-[800px] object-contain max-w-none transition-transform duration-500 group-active:scale-[1.1]" 
                 alt="p2"
               />
             )}
           </div>
 
           <div className="absolute inset-0 bg-gradient-to-t from-red-950 via-transparent to-transparent z-10" />
-          <div className="absolute bottom-4 md:bottom-12 left-0 w-full flex flex-col items-center z-20">
-             {/* 💡 已刪除 TEAM RED */}
-             <h2 className="text-3xl md:text-6xl font-black italic tracking-widest drop-shadow-[0_5px_15px_rgba(0,0,0,1)] uppercase">{match.p2_name}</h2>
-             <div className="mt-4 px-8 py-2 bg-red-600 rounded-full text-sm font-black italic tracking-widest shadow-[0_0_20px_rgba(220,38,38,0.6)]">VOTE</div>
+          <div className="absolute bottom-6 md:bottom-12 left-0 w-full flex flex-col items-center z-20">
+             <h2 className="text-4xl md:text-6xl font-black italic tracking-widest drop-shadow-[0_5px_15px_rgba(0,0,0,1)] uppercase">{match.p2_name}</h2>
+             <div className="mt-4 px-10 py-2 bg-red-600 rounded-full text-sm font-black italic tracking-widest shadow-[0_0_20px_rgba(220,38,38,0.6)]">VOTE</div>
           </div>
         </motion.div>
       </div>
