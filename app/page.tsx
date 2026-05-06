@@ -31,10 +31,10 @@ export default function MobileVotingPage() {
   }, []);
 
   const handleVote = async (player: 'p1' | 'p2') => {
-    if (hasVoted) return;
-    setHasVoted(true);
-    setVotedFor(player);
-    localStorage.setItem('swc_voted_p', player);
+  //if (hasVoted) return;
+  // setHasVoted(true);
+  // setVotedFor(player);
+  // localStorage.setItem('swc_voted_p', player);
     await supabase.rpc('increment_vote', { player });
   };
 

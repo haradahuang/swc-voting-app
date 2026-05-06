@@ -46,7 +46,7 @@ export default function StageScreenPage() {
       {/* ================= 左半邊：藍方 ================= */}
       <div className="relative w-1/2 h-full z-10">
         
-        {/* 💡 1. 區塊變窄：寬度調整為 65% */}
+        {/* 區塊變窄：寬度調整為 65% */}
         <div className="absolute right-0 top-0 w-[65%] h-[75%] bg-gradient-to-b from-[#0a38b3] to-[#051c5e] pt-10 shadow-[20px_0_50px_rgba(0,0,0,0.5)]">
           
           <motion.div 
@@ -55,14 +55,14 @@ export default function StageScreenPage() {
             animate={{ scale: 1, opacity: 1 }} 
             className="absolute top-6 left-6 text-white flex items-baseline z-0 opacity-90 scale-y-[1.9] origin-top-left tracking-tighter"
           >
-            {/* 💡 2. 字體加粗：改為 font-black */}
+            {/* 字體加粗：font-black */}
             <span className="text-[140px] font-black leading-none drop-shadow-[0_10px_20px_rgba(0,0,0,0.3)]">{p1Int}</span>
             <span className="text-[45px] font-black leading-none drop-shadow-[0_10px_20px_rgba(0,0,0,0.3)] -ml-1">.{p1Dec}</span>
             <span className="text-[24px] font-black ml-1 opacity-80">%</span>
           </motion.div>
         </div>
 
-        {/* 3D 延伸地板 (精準接合 65% 牆面) */}
+        {/* 3D 延伸地板 */}
         <div 
           className="absolute right-0 top-[75%] w-full h-[25%] bg-gradient-to-b from-[#051c5e] to-[#0a38b3] overflow-hidden shadow-[20px_0_50px_rgba(0,0,0,0.5)]" 
           style={{ clipPath: 'polygon(35% 0, 100% 0, 100% 100%, 0% 100%)' }}
@@ -79,7 +79,19 @@ export default function StageScreenPage() {
           </div>
           <div className="text-center z-30 -translate-x-16">
             <h2 className={`${nameTextClass} font-black text-white uppercase tracking-widest drop-shadow-[0_5px_15px_rgba(0,0,0,0.9)] mb-2 transition-all`}>{match.p1_name}</h2>
-            <div className="text-3xl font-bold text-blue-300 tracking-widest drop-shadow-md">{match.p1_votes} <span className="text-xl opacity-70">VOTES</span></div>
+            {/* 💡 加入彈跳動畫的票數顯示 */}
+            <div className="text-3xl font-bold text-blue-300 tracking-widest drop-shadow-md flex justify-center items-baseline gap-2 mt-1">
+              <motion.span
+                key={match.p1_votes} 
+                initial={{ scale: 2, color: '#ffffff' }} 
+                animate={{ scale: 1, color: '#93c5fd' }} 
+                transition={{ type: "spring", stiffness: 400, damping: 10 }} 
+                className="inline-block origin-bottom"
+              >
+                {match.p1_votes}
+              </motion.span>
+              <span className="text-xl opacity-70">VOTES</span>
+            </div>
           </div>
         </div>
       </div>
@@ -87,7 +99,7 @@ export default function StageScreenPage() {
       {/* ================= 右半邊：紅方 ================= */}
       <div className="relative w-1/2 h-full z-0">
         
-        {/* 💡 1. 區塊變窄：寬度調整為 65% */}
+        {/* 區塊變窄：寬度調整為 65% */}
         <div className="absolute left-0 top-0 w-[65%] h-[75%] bg-gradient-to-b from-[#c20a1f] to-[#6b030e] pt-10 shadow-[-20px_0_50px_rgba(0,0,0,0.5)]">
           
           <motion.div 
@@ -96,14 +108,14 @@ export default function StageScreenPage() {
             animate={{ scale: 1, opacity: 1 }} 
             className="absolute top-6 right-6 text-white flex items-baseline z-0 opacity-90 scale-y-[1.9] origin-top-right tracking-tighter"
           >
-            {/* 💡 2. 字體加粗：改為 font-black */}
+            {/* 字體加粗：font-black */}
             <span className="text-[140px] font-black leading-none drop-shadow-[0_10px_20px_rgba(0,0,0,0.3)]">{p2Int}</span>
             <span className="text-[45px] font-black leading-none drop-shadow-[0_10px_20px_rgba(0,0,0,0.3)] -ml-1">.{p2Dec}</span>
             <span className="text-[24px] font-black ml-1 opacity-80">%</span>
           </motion.div>
         </div>
 
-        {/* 3D 延伸地板 (精準接合 65% 牆面) */}
+        {/* 3D 延伸地板 */}
         <div 
           className="absolute left-0 top-[75%] w-full h-[25%] bg-gradient-to-b from-[#6b030e] to-[#c20a1f] overflow-hidden shadow-[-20px_0_50px_rgba(0,0,0,0.5)]" 
           style={{ clipPath: 'polygon(0 0, 65% 0, 100% 100%, 0% 100%)' }}
@@ -120,7 +132,19 @@ export default function StageScreenPage() {
           </div>
           <div className="text-center z-30 translate-x-16">
             <h2 className={`${nameTextClass} font-black text-white uppercase tracking-widest drop-shadow-[0_5px_15px_rgba(0,0,0,0.9)] mb-2 transition-all`}>{match.p2_name}</h2>
-            <div className="text-3xl font-bold text-red-300 tracking-widest drop-shadow-md">{match.p2_votes} <span className="text-xl opacity-70">VOTES</span></div>
+            {/* 💡 加入彈跳動畫的票數顯示 */}
+            <div className="text-3xl font-bold text-red-300 tracking-widest drop-shadow-md flex justify-center items-baseline gap-2 mt-1">
+              <motion.span
+                key={match.p2_votes} 
+                initial={{ scale: 2, color: '#ffffff' }} 
+                animate={{ scale: 1, color: '#fca5a5' }} 
+                transition={{ type: "spring", stiffness: 400, damping: 10 }} 
+                className="inline-block origin-bottom"
+              >
+                {match.p2_votes}
+              </motion.span>
+              <span className="text-xl opacity-70">VOTES</span>
+            </div>
           </div>
         </div>
       </div>
