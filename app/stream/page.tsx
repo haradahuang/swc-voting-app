@@ -56,15 +56,16 @@ export default function StreamOverlayPage() {
                  />
                )}
             </div>
-            {/* 💡 已徹底刪除產生黑線的漸層層 */}
          </div>
 
          {/* 數據區 */}
-         <div className="flex-1 flex flex-col justify-center items-end px-10 relative z-20">
-            <div className="flex items-center gap-4 mb-2">
-              <span className="bg-blue-600 text-white font-black px-3 py-1 rounded text-sm tracking-widest shadow-[0_0_15px_rgba(37,99,235,0.6)]">BLUE</span>
-              <span className="text-4xl font-black text-white tracking-widest drop-shadow-md">{match.p1_name}</span>
-            </div>
+         <div className="flex-1 flex flex-col justify-center items-end px-12 relative z-20">
+            {/* 💡 1 & 2: 刪除 BLUE 標籤，大幅放大名字並拉開與下方數據的距離 */}
+            <h2 className="text-[55px] font-black text-white tracking-widest drop-shadow-[0_5px_15px_rgba(0,0,0,0.8)] mb-6">
+              {match.p1_name}
+            </h2>
+            
+            {/* 💡 3: 數據往下移動 (因為上方 mb-6 推擠，會自動下降) */}
             <div className="flex items-baseline gap-6">
               <div className="text-blue-300 font-bold text-2xl tracking-widest">
                 {match.p1_votes} <span className="text-sm opacity-80">VOTES</span>
@@ -83,7 +84,7 @@ export default function StreamOverlayPage() {
          {/* 頂部金屬裝飾條 */}
          <div className="absolute top-0 w-full h-2 bg-gradient-to-r from-yellow-700 via-yellow-400 to-yellow-700 shadow-[0_0_15px_rgba(250,204,21,0.5)]"></div>
          
-         {/* 💡 加上 pr-3 擴張右側空間，完美解決斜體 E 被切斷的問題 */}
+         {/* 放大的 LIVE VOTE (已加上 pr-3 防止斜體被切) */}
          <div className="text-[65px] font-black italic text-transparent bg-clip-text bg-gradient-to-b from-white to-gray-400 leading-[0.85] mb-4 text-center tracking-tighter drop-shadow-[0_0_20px_rgba(255,255,255,0.3)] pr-3">
            LIVE<br/>VOTE
          </div>
@@ -111,15 +112,16 @@ export default function StreamOverlayPage() {
                  />
                )}
             </div>
-            {/* 💡 已徹底刪除產生黑線的漸層層 */}
          </div>
 
          {/* 數據區 */}
-         <div className="flex-1 flex flex-col justify-center items-start px-10 relative z-20">
-            <div className="flex items-center gap-4 mb-2 flex-row-reverse">
-              <span className="bg-red-600 text-white font-black px-3 py-1 rounded text-sm tracking-widest shadow-[0_0_15px_rgba(220,38,38,0.6)]">RED</span>
-              <span className="text-4xl font-black text-white tracking-widest drop-shadow-md">{match.p2_name}</span>
-            </div>
+         <div className="flex-1 flex flex-col justify-center items-start px-12 relative z-20">
+            {/* 💡 1 & 2: 刪除 RED 標籤，大幅放大名字並拉開與下方數據的距離 */}
+            <h2 className="text-[55px] font-black text-white tracking-widest drop-shadow-[0_5px_15px_rgba(0,0,0,0.8)] mb-6">
+              {match.p2_name}
+            </h2>
+            
+            {/* 💡 3: 數據往下移動 */}
             <div className="flex items-baseline gap-6 flex-row-reverse">
               <div className="text-red-300 font-bold text-2xl tracking-widest">
                 {match.p2_votes} <span className="text-sm opacity-80">VOTES</span>
