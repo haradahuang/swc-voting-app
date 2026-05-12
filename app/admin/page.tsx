@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
-import { Save, RotateCcw, MonitorPlay, Tv, Radio, Power, Trophy, Users } from 'lucide-react';
+import { Save, RotateCcw, MonitorPlay, Tv, Radio, Power, Trophy, Users, MonitorUp, MonitorOff } from 'lucide-react';
 
 export default function AdminPage() {
   const [match, setMatch] = useState<any>(null);
@@ -9,7 +9,6 @@ export default function AdminPage() {
   const [editMode, setEditMode] = useState<'screen' | 'stream'>('screen');
   const [currentMatchId, setCurrentMatchId] = useState<number>(1);
 
-  // 抽獎相關狀態
   const [drawTarget, setDrawTarget] = useState<'all' | '1' | '2'>('all');
   const [drawCount, setDrawCount] = useState<number>(1);
   const [winners, setWinners] = useState<any[]>([]);
@@ -17,7 +16,7 @@ export default function AdminPage() {
 
   useEffect(() => {
     fetchMatch(currentMatchId);
-    setWinners([]); // 切換賽事時清空抽獎結果
+    setWinners([]); 
   }, [currentMatchId]);
 
   const fetchMatch = async (id: number) => {
@@ -46,7 +45,6 @@ export default function AdminPage() {
 
   const handleChange = (field: string, value: any) => setMatch((prev: any) => ({ ...prev, [field]: value }));
   const handleSyncToDB = async (field: string, value: any) => await supabase.from('active_match').update({ [field]: value }).eq('id', currentMatchId);
-  
   const handleSave = async () => {
     await supabase.from('active_match').update(match).eq('id', currentMatchId);
     alert(`賽事 ${currentMatchId} 同步成功！`);
@@ -55,40 +53,46 @@ export default function AdminPage() {
   const handleSetLive = async () => {
     await supabase.from('active_match').update({ is_active: false }).neq('id', 0); 
     await supabase.from('active_match').update({ is_active: true }).eq('id', currentMatchId); 
-    alert(`✅ 已將【賽事 ${currentMatchId}】推送到大螢幕與投票頁面！`);
+    alert(`✅ 已推送到大螢幕！`);
     fetchMatch(currentMatchId);
   };
 
-  // 💡 切換投票開關
   const handleToggleVoting = async () => {
     const newState = !match.is_voting_open;
     await supabase.from('active_match').update({ is_voting_open: newState }).eq('id', currentMatchId);
     setMatch({ ...match, is_voting_open: newState });
   };
 
-  // 💡 執行抽獎邏輯
   const handleLuckyDraw = async () => {
     setIsDrawing(true);
     setWinners([]);
-    
-    // 從資料庫抓取這場賽事的投票紀錄
     let query = supabase.from('user_votes').select('*').eq('match_id', currentMatchId);
     if (drawTarget === '1') query = query.eq('player', 1);
     if (drawTarget === '2') query = query.eq('player', 2);
     
     const { data, error } = await query;
-    
     setTimeout(() => {
       if (error || !data || data.length === 0) {
-        alert('這場賽事目前沒有符合條件的玩家！');
+        alert('該賽事目前沒有符合條件的玩家！請確認是否已關閉RLS，或該選項真的沒人投。');
       } else {
-        // 洗牌演算法 (隨機打亂)
         const shuffled = data.sort(() => 0.5 - Math.random());
-        // 抽出指定人數
         setWinners(shuffled.slice(0, drawCount));
       }
       setIsDrawing(false);
-    }, 800); // 加一點延遲讓畫面有「抽獎中」的懸念感
+    }, 800);
+  };
+
+  // 💡 推送抽獎結果到螢幕
+  const handlePushLottery = async () => {
+    await supabase.from('active_match').update({ show_lottery: true, lottery_winners: winners }).eq('id', currentMatchId);
+    setMatch({ ...match, show_lottery: true });
+    alert('已將抽獎結果發送至大螢幕與直播！');
+  };
+
+  // 💡 關閉抽獎畫面
+  const handleCloseLottery = async () => {
+    await supabase.from('active_match').update({ show_lottery: false }).eq('id', currentMatchId);
+    setMatch({ ...match, show_lottery: false });
   };
 
   if (!match) return <div className="p-10 text-white">Loading...</div>;
@@ -97,7 +101,7 @@ export default function AdminPage() {
     <div className="min-h-screen bg-zinc-950 text-zinc-100 p-8 font-sans pb-20">
       <div className="max-w-7xl mx-auto space-y-6">
         
-        {/* ================= 8 場賽事切換區 ================= */}
+        {/* 賽事切換 */}
         <div className="bg-zinc-900 p-4 rounded-2xl border border-zinc-800 flex gap-2 overflow-x-auto">
           {[1,2,3,4,5,6,7,8].map(id => (
             <button key={id} onClick={() => setCurrentMatchId(id)} className={`px-6 py-3 rounded-xl font-black whitespace-nowrap transition-all ${currentMatchId === id ? 'bg-blue-600 text-white shadow-lg' : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'}`}>
@@ -106,12 +110,9 @@ export default function AdminPage() {
           ))}
         </div>
 
-        {/* ================= Header 區塊 ================= */}
+        {/* Header */}
         <div className="flex flex-col xl:flex-row justify-between items-center bg-zinc-900 p-6 rounded-2xl border border-zinc-800 gap-6 relative overflow-hidden">
-          {match.is_active && (
-            <div className="absolute top-0 right-0 bg-red-600 text-white text-xs font-bold px-4 py-1 rounded-bl-xl flex items-center gap-1 animate-pulse"><Radio size={14} /> LIVE ON SCREEN</div>
-          )}
-
+          {match.is_active && <div className="absolute top-0 right-0 bg-red-600 text-white text-xs font-bold px-4 py-1 rounded-bl-xl flex items-center gap-1 animate-pulse"><Radio size={14} /> LIVE ON SCREEN</div>}
           <div className="flex items-center gap-6 flex-wrap">
             <h1 className="text-xl font-black italic text-white uppercase">賽事 {currentMatchId} 設定</h1>
             <div className="flex items-center gap-3 border-l border-zinc-700 pl-6">
@@ -119,27 +120,20 @@ export default function AdminPage() {
               <input className="bg-zinc-950 border border-zinc-700 rounded-lg p-2 focus:ring-2 focus:ring-yellow-500 text-yellow-400 font-bold w-48 text-center" value={match.tournament_name || ''} onChange={(e) => handleChange('tournament_name', e.target.value)} onBlur={(e) => handleSyncToDB('tournament_name', e.target.value)} />
             </div>
           </div>
-
           <div className="flex gap-3 flex-wrap">
             <button onClick={() => supabase.from('active_match').update({p1_votes:0, p2_votes:0}).eq('id',currentMatchId).then(()=>fetchMatch(currentMatchId))} className="flex items-center gap-2 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 rounded-lg text-sm font-bold"><RotateCcw size={16}/> 歸零</button>
             <button onClick={handleSave} className="flex items-center gap-2 px-6 py-2 bg-zinc-700 hover:bg-zinc-600 rounded-lg font-bold"><Save size={16}/> 儲存</button>
-            
-            {/* 💡 投票開關按鈕 */}
-            <button onClick={handleToggleVoting} className={`flex items-center gap-2 px-6 py-2 rounded-lg font-black transition-all shadow-lg ${match.is_voting_open ? 'bg-emerald-600 hover:bg-emerald-500' : 'bg-red-700 hover:bg-red-600'}`}>
-              <Power size={18}/> {match.is_voting_open ? '開放投票中 (點擊關閉)' : '投票已關閉 (點擊開放)'}
-            </button>
-
+            <button onClick={handleToggleVoting} className={`flex items-center gap-2 px-6 py-2 rounded-lg font-black transition-all shadow-lg ${match.is_voting_open ? 'bg-emerald-600 hover:bg-emerald-500' : 'bg-red-700 hover:bg-red-600'}`}><Power size={18}/> {match.is_voting_open ? '開放投票中' : '投票已關閉'}</button>
             <button onClick={handleSetLive} className="flex items-center gap-2 px-6 py-2 bg-red-600 hover:bg-red-500 rounded-lg font-black shadow-[0_0_15px_rgba(220,38,38,0.5)]"><Radio size={18}/> 推上直播</button>
           </div>
         </div>
 
-        {/* 模式切換 */}
+        {/* 玩家設定區省略... 跟之前完全一樣，這裡僅放完整代碼確保能運行 */}
         <div className="flex justify-center gap-4 bg-zinc-900/50 py-4 rounded-2xl border border-zinc-800/50">
            <button onClick={() => setEditMode('screen')} className={`flex items-center gap-2 px-8 py-3 rounded-xl font-bold ${editMode === 'screen' ? 'bg-blue-600 text-white' : 'bg-zinc-800 text-zinc-400'}`}><MonitorPlay size={20} /> 調整【現場大螢幕】</button>
            <button onClick={() => setEditMode('stream')} className={`flex items-center gap-2 px-8 py-3 rounded-xl font-bold ${editMode === 'stream' ? 'bg-purple-600 text-white' : 'bg-zinc-800 text-zinc-400'}`}><Tv size={20} /> 調整【直播台下標】</button>
         </div>
 
-        {/* ================= 玩家設定區 ================= */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {['p1', 'p2'].map((p) => {
             const currentX = match[editMode === 'screen' ? `${p}_x` : `${p}_stream_x`] ?? 50;
@@ -175,8 +169,16 @@ export default function AdminPage() {
           })}
         </div>
 
-        {/* ================= 🏆 現場抽獎系統 ================= */}
-        <div className="bg-gradient-to-br from-yellow-900/40 to-black p-8 rounded-3xl border border-yellow-700/50 mt-8 shadow-[0_0_50px_rgba(202,138,4,0.15)]">
+        {/* 🏆 抽獎區 */}
+        <div className="bg-gradient-to-br from-yellow-900/40 to-black p-8 rounded-3xl border border-yellow-700/50 mt-8 shadow-[0_0_50px_rgba(202,138,4,0.15)] relative">
+          
+          {/* 💡 當大螢幕正在顯示時，顯示關閉按鈕 */}
+          {match.show_lottery && (
+            <button onClick={handleCloseLottery} className="absolute top-6 right-6 bg-red-600 hover:bg-red-500 text-white font-black px-6 py-2 rounded-xl shadow-lg flex items-center gap-2 animate-pulse">
+              <MonitorOff size={18} /> 關閉螢幕抽獎畫面
+            </button>
+          )}
+
           <div className="flex items-center gap-3 mb-6">
             <Trophy className="text-yellow-500" size={32} />
             <h2 className="text-3xl font-black italic text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-yellow-200 uppercase">現場抽獎系統</h2>
@@ -185,46 +187,37 @@ export default function AdminPage() {
           <div className="flex flex-col md:flex-row gap-6 items-end bg-black/50 p-6 rounded-2xl border border-white/5">
             <div className="flex-1 w-full">
               <label className="block text-sm font-bold text-zinc-400 mb-2 uppercase tracking-widest">抽獎條件對象</label>
-              <select 
-                className="w-full bg-zinc-900 border border-zinc-700 rounded-xl p-4 text-white font-bold text-lg focus:ring-2 focus:ring-yellow-500 appearance-none cursor-pointer"
-                value={drawTarget}
-                onChange={(e: any) => setDrawTarget(e.target.value)}
-              >
+              <select className="w-full bg-zinc-900 border border-zinc-700 rounded-xl p-4 text-white font-bold text-lg focus:ring-2 focus:ring-yellow-500 appearance-none cursor-pointer" value={drawTarget} onChange={(e: any) => setDrawTarget(e.target.value)}>
                 <option value="all">🎲 所有參與投票的人 (總覽抽獎)</option>
-                <option value="1">🔵 只有投給【{match.p1_name}】的人 (預測成功)</option>
-                <option value="2">🔴 只有投給【{match.p2_name}】的人 (預測成功)</option>
+                <option value="1">🔵 投給【{match.p1_name}】的人</option>
+                <option value="2">🔴 投給【{match.p2_name}】的人</option>
               </select>
             </div>
-            
             <div>
               <label className="block text-sm font-bold text-zinc-400 mb-2 uppercase tracking-widest">抽出人數</label>
-              <input 
-                type="number" min={1} max={100}
-                className="w-32 bg-zinc-900 border border-zinc-700 rounded-xl p-4 text-white font-bold text-lg text-center focus:ring-2 focus:ring-yellow-500"
-                value={drawCount}
-                onChange={(e) => setDrawCount(parseInt(e.target.value) || 1)}
-              />
+              <input type="number" min={1} max={100} className="w-32 bg-zinc-900 border border-zinc-700 rounded-xl p-4 text-white font-bold text-lg text-center focus:ring-2 focus:ring-yellow-500" value={drawCount} onChange={(e) => setDrawCount(parseInt(e.target.value) || 1)}/>
             </div>
-
-            <button 
-              onClick={handleLuckyDraw} disabled={isDrawing}
-              className="bg-yellow-500 hover:bg-yellow-400 text-black font-black text-xl px-10 py-4 rounded-xl shadow-[0_0_20px_rgba(234,179,8,0.5)] transition-all disabled:opacity-50 flex items-center gap-2"
-            >
-              {isDrawing ? '洗牌抽獎中...' : '🎉 立即開抽'}
+            <button onClick={handleLuckyDraw} disabled={isDrawing} className="bg-zinc-200 hover:bg-white text-black font-black text-xl px-10 py-4 rounded-xl shadow-[0_0_20px_rgba(255,255,255,0.2)] transition-all disabled:opacity-50 flex items-center gap-2">
+              {isDrawing ? '洗牌抽獎中...' : '🎉 在後台開抽'}
             </button>
           </div>
 
-          {/* 抽獎結果顯示區 */}
           {winners.length > 0 && (
             <div className="mt-8 p-6 bg-zinc-900 border border-yellow-500/30 rounded-2xl">
-              <h3 className="text-xl font-bold text-yellow-400 mb-4 flex items-center gap-2"><Users size={20}/> 恭喜以下 {winners.length} 位得獎者：</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-xl font-bold text-yellow-400 flex items-center gap-2"><Users size={20}/> 恭喜以下 {winners.length} 位得獎者：</h3>
+                {/* 💡 發送至螢幕按鈕 */}
+                <button onClick={handlePushLottery} className="bg-yellow-500 hover:bg-yellow-400 text-black font-black px-6 py-2 rounded-xl shadow-[0_0_20px_rgba(234,179,8,0.5)] transition-all flex items-center gap-2">
+                  <MonitorUp size={18} /> 推送名單至大螢幕
+                </button>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {winners.map((w, idx) => (
                   <div key={idx} className="flex items-center gap-4 bg-black p-4 rounded-xl border border-zinc-800">
-                    <div className="w-10 h-10 rounded-full bg-yellow-500/20 text-yellow-500 flex items-center justify-center font-black text-xl">{idx + 1}</div>
-                    <div>
-                      <div className="font-bold text-white text-lg">{w.user_name || '未提供名稱'}</div>
-                      <div className="text-zinc-500 text-sm">{w.user_email || '無信箱資料'}</div>
+                    <div className="w-10 h-10 rounded-full bg-yellow-500/20 text-yellow-500 flex items-center justify-center font-black text-xl shrink-0">{idx + 1}</div>
+                    <div className="truncate">
+                      <div className="font-bold text-white text-lg truncate">{w.user_name || '未提供名稱'}</div>
+                      <div className="text-zinc-500 text-xs truncate">{w.user_email || '無信箱資料'}</div>
                     </div>
                   </div>
                 ))}
@@ -232,7 +225,6 @@ export default function AdminPage() {
             </div>
           )}
         </div>
-
       </div>
     </div>
   );
