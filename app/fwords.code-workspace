@@ -1,0 +1,13 @@
+{
+	"folders": [
+		{
+			"path": ".."
+		},
+		{
+			"path": "../../fantasy words"
+		}
+	],
+	"settings": {
+		"liveServer.settings.multiRootWorkspaceName": "fantasy words"
+	}
+}

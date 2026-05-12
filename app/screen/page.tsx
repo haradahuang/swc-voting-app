@@ -13,7 +13,7 @@ export default function StageScreenPage() {
       setOriginUrl(window.location.origin);
     }
     const fetchMatch = () => {
-      supabase.from('active_match').select('*').eq('id', 1).single().then(({ data }) => setMatch(data));
+      supabase.from('active_match').select('*').eq('is_active', true).single().then(({ data }) => setMatch(data));
     };
     fetchMatch();
     

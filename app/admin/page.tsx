@@ -1,21 +1,22 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
-import { Upload, Save, RotateCcw, MonitorPlay, Tv } from 'lucide-react';
+import { Save, RotateCcw, MonitorPlay, Tv, Radio } from 'lucide-react';
 
 export default function AdminPage() {
   const [match, setMatch] = useState<any>(null);
   const [uploading, setUploading] = useState(false);
-  
-  // 💡 用來控制目前正在編輯哪個畫面的狀態 (預設為大螢幕)
   const [editMode, setEditMode] = useState<'screen' | 'stream'>('screen');
+  
+  // 💡 新增：目前正在編輯的賽事 ID (1~8)
+  const [currentMatchId, setCurrentMatchId] = useState<number>(1);
 
   useEffect(() => {
-    fetchMatch();
-  }, []);
+    fetchMatch(currentMatchId);
+  }, [currentMatchId]);
 
-  const fetchMatch = async () => {
-    const { data } = await supabase.from('active_match').select('*').eq('id', 1).single();
+  const fetchMatch = async (id: number) => {
+    const { data } = await supabase.from('active_match').select('*').eq('id', id).single();
     setMatch(data);
   };
 
@@ -27,17 +28,12 @@ export default function AdminPage() {
 
       const fileExt = file.name.split('.').pop();
       const fileName = `${playerKey}_${Math.random()}.${fileExt}`;
-      const filePath = `${fileName}`;
-
-      const { error: uploadError } = await supabase.storage.from('avatars').upload(filePath, file);
+      const { error: uploadError } = await supabase.storage.from('avatars').upload(fileName, file);
       if (uploadError) throw uploadError;
 
-      const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(filePath);
-
-      const updatedMatch = { ...match, [`${playerKey}_avatar`]: publicUrl };
-      setMatch(updatedMatch);
-      await supabase.from('active_match').update({ [`${playerKey}_avatar`]: publicUrl }).eq('id', 1);
-      
+      const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(fileName);
+      setMatch({ ...match, [`${playerKey}_avatar`]: publicUrl });
+      await supabase.from('active_match').update({ [`${playerKey}_avatar`]: publicUrl }).eq('id', currentMatchId);
     } catch (error) {
       alert('上傳失敗');
     } finally {
@@ -45,165 +41,107 @@ export default function AdminPage() {
     }
   };
 
-  // 即時更新本地狀態 (讓預覽畫面順暢)
-  const handleChange = (field: string, value: any) => {
-    setMatch((prev: any) => ({ ...prev, [field]: value }));
-  };
-
-  // 寫入資料庫 (用於滑桿放開、或輸入框失去焦點時)
-  const handleSyncToDB = async (field: string, value: any) => {
-    await supabase.from('active_match').update({ [field]: value }).eq('id', 1);
-  };
-
+  const handleChange = (field: string, value: any) => setMatch((prev: any) => ({ ...prev, [field]: value }));
+  const handleSyncToDB = async (field: string, value: any) => await supabase.from('active_match').update({ [field]: value }).eq('id', currentMatchId);
+  
   const handleSave = async () => {
-    await supabase.from('active_match').update(match).eq('id', 1);
-    alert('同步成功！');
+    await supabase.from('active_match').update(match).eq('id', currentMatchId);
+    alert(`賽事 ${currentMatchId} 同步成功！`);
+  };
+
+  // 💡 新增：將目前編輯的賽事推上大螢幕
+  const handleSetLive = async () => {
+    await supabase.from('active_match').update({ is_active: false }).neq('id', 0); // 先把所有人取消
+    await supabase.from('active_match').update({ is_active: true }).eq('id', currentMatchId); // 啟動這場
+    alert(`✅ 已將【賽事 ${currentMatchId}】推送到大螢幕與投票頁面！`);
+    fetchMatch(currentMatchId); // 重整拿最新資料
   };
 
   if (!match) return <div className="p-10 text-white">Loading...</div>;
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-100 p-8 font-sans">
+    <div className="min-h-screen bg-zinc-950 text-zinc-100 p-8 font-sans pb-20">
       <div className="max-w-7xl mx-auto space-y-6">
         
-        {/* ================= Header 區塊 ================= */}
-        <div className="flex flex-col md:flex-row justify-between items-center bg-zinc-900 p-6 rounded-2xl border border-zinc-800 gap-4">
+        {/* ================= 8 場賽事切換區 ================= */}
+        <div className="bg-zinc-900 p-4 rounded-2xl border border-zinc-800 flex gap-2 overflow-x-auto">
+          {[1,2,3,4,5,6,7,8].map(id => (
+            <button
+              key={id}
+              onClick={() => setCurrentMatchId(id)}
+              className={`px-6 py-3 rounded-xl font-black whitespace-nowrap transition-all ${currentMatchId === id ? 'bg-blue-600 text-white shadow-lg' : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'}`}
+            >
+              賽事 {id}
+            </button>
+          ))}
+        </div>
+
+        {/* Header 區塊 */}
+        <div className="flex flex-col md:flex-row justify-between items-center bg-zinc-900 p-6 rounded-2xl border border-zinc-800 gap-4 relative overflow-hidden">
+          {/* 顯示這場是否為直播中 */}
+          {match.is_active && (
+            <div className="absolute top-0 right-0 bg-red-600 text-white text-xs font-bold px-4 py-1 rounded-bl-xl flex items-center gap-1 animate-pulse">
+              <Radio size={14} /> LIVE ON SCREEN
+            </div>
+          )}
+
           <div className="flex items-center gap-6">
-            <h1 className="text-2xl font-black italic tracking-tighter uppercase text-white">SWC Admin Panel</h1>
-            
-            {/* 💡 自訂賽事名稱輸入框 */}
+            <h1 className="text-xl font-black italic text-white uppercase">賽事 {currentMatchId} 設定</h1>
             <div className="flex items-center gap-3 border-l border-zinc-700 pl-6">
-              <span className="text-xs uppercase text-zinc-400 font-bold">賽事名稱<br/>(Tournament)</span>
+              <span className="text-xs uppercase text-zinc-400 font-bold">賽事名稱</span>
               <input 
                 className="bg-zinc-950 border border-zinc-700 rounded-lg p-2 focus:ring-2 focus:ring-yellow-500 text-yellow-400 font-bold w-48 text-center"
-                value={match.tournament_name || ''} 
-                onChange={(e) => handleChange('tournament_name', e.target.value)}
-                onBlur={(e) => handleSyncToDB('tournament_name', e.target.value)}
-                placeholder="例如: SWC 2026"
+                value={match.tournament_name || ''} onChange={(e) => handleChange('tournament_name', e.target.value)} onBlur={(e) => handleSyncToDB('tournament_name', e.target.value)}
               />
             </div>
           </div>
 
           <div className="flex gap-4">
-            <button onClick={() => supabase.from('active_match').update({p1_votes:0, p2_votes:0}).eq('id',1).then(()=>fetchMatch())} className="flex items-center gap-2 px-4 py-2 bg-zinc-800 hover:bg-red-900 rounded-lg transition text-sm font-bold">
-              <RotateCcw size={18}/> Reset Votes
-            </button>
-            <button onClick={handleSave} className="flex items-center gap-2 px-6 py-2 bg-blue-600 hover:bg-blue-500 rounded-lg transition font-bold">
-              <Save size={18}/> 強制全域同步
-            </button>
+            <button onClick={() => supabase.from('active_match').update({p1_votes:0, p2_votes:0}).eq('id',currentMatchId).then(()=>fetchMatch(currentMatchId))} className="flex items-center gap-2 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 rounded-lg text-sm font-bold"><RotateCcw size={18}/> 票數歸零</button>
+            <button onClick={handleSave} className="flex items-center gap-2 px-6 py-2 bg-zinc-700 hover:bg-zinc-600 rounded-lg font-bold"><Save size={18}/> 儲存設定</button>
+            <button onClick={handleSetLive} className="flex items-center gap-2 px-6 py-2 bg-red-600 hover:bg-red-500 rounded-lg font-black shadow-[0_0_15px_rgba(220,38,38,0.5)]"><Radio size={18}/> 推上直播</button>
           </div>
         </div>
 
-        {/* ================= 模式切換開關區 ================= */}
+        {/* 模式切換 */}
         <div className="flex justify-center gap-4 bg-zinc-900/50 py-4 rounded-2xl border border-zinc-800/50">
-           <button
-             onClick={() => setEditMode('screen')}
-             className={`flex items-center gap-2 px-8 py-3 rounded-xl font-bold transition-all ${editMode === 'screen' ? 'bg-blue-600 text-white shadow-[0_0_20px_rgba(37,99,235,0.4)]' : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'}`}
-           >
-             <MonitorPlay size={20} />
-             調整【現場大螢幕】全身
-           </button>
-           <button
-             onClick={() => setEditMode('stream')}
-             className={`flex items-center gap-2 px-8 py-3 rounded-xl font-bold transition-all ${editMode === 'stream' ? 'bg-purple-600 text-white shadow-[0_0_20px_rgba(147,51,234,0.4)]' : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'}`}
-           >
-             <Tv size={20} />
-             調整【直播台下標】半身
-           </button>
+           <button onClick={() => setEditMode('screen')} className={`flex items-center gap-2 px-8 py-3 rounded-xl font-bold ${editMode === 'screen' ? 'bg-blue-600 text-white' : 'bg-zinc-800 text-zinc-400'}`}><MonitorPlay size={20} /> 調整【現場大螢幕】</button>
+           <button onClick={() => setEditMode('stream')} className={`flex items-center gap-2 px-8 py-3 rounded-xl font-bold ${editMode === 'stream' ? 'bg-purple-600 text-white' : 'bg-zinc-800 text-zinc-400'}`}><Tv size={20} /> 調整【直播台下標】</button>
         </div>
 
-        {/* ================= 玩家控制區塊 ================= */}
+        {/* 玩家設定區 */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {['p1', 'p2'].map((p) => {
-            
-            // 💡 根據目前的模式，動態抓取對應的 X, Y, Size 數值
             const currentX = match[editMode === 'screen' ? `${p}_x` : `${p}_stream_x`] ?? 50;
             const currentY = match[editMode === 'screen' ? `${p}_y` : `${p}_stream_y`] ?? 50;
             const currentSize = match[editMode === 'screen' ? `${p}_size` : `${p}_stream_size`] ?? 100;
 
             return (
-              <div key={p} className={`p-8 rounded-3xl border space-y-6 flex flex-col xl:flex-row gap-8 transition-colors ${editMode === 'screen' ? 'bg-zinc-900 border-zinc-800' : 'bg-[#1a1525] border-purple-900/50'}`}>
-                
-                {/* 左側設定區 */}
+              <div key={p} className={`p-8 rounded-3xl border space-y-6 flex flex-col xl:flex-row gap-8 ${editMode === 'screen' ? 'bg-zinc-900 border-zinc-800' : 'bg-[#1a1525] border-purple-900/50'}`}>
                 <div className="flex-1 space-y-4">
-                  <div className="flex justify-between items-center">
-                     <h2 className={`text-xl font-bold uppercase ${p === 'p1' ? 'text-blue-500' : 'text-red-500'}`}>
-                       Player {p === 'p1' ? '1 (Blue)' : '2 (Red)'}
-                     </h2>
-                     {/* 顯示目前正在編輯的狀態標籤 */}
-                     <span className={`text-xs px-2 py-1 rounded font-bold uppercase ${editMode === 'screen' ? 'bg-blue-900/50 text-blue-300' : 'bg-purple-900/50 text-purple-300'}`}>
-                        {editMode === 'screen' ? 'Screen Mode' : 'Stream Mode'}
-                     </span>
-                  </div>
+                  <h2 className={`text-xl font-bold uppercase ${p === 'p1' ? 'text-blue-500' : 'text-red-500'}`}>Player {p === 'p1' ? '1 (Blue)' : '2 (Red)'}</h2>
+                  <input className="w-full bg-zinc-800/80 border-none rounded-xl p-3 text-white" value={match[`${p}_name`]} onChange={(e) => handleChange(`${p}_name`, e.target.value)} onBlur={(e) => handleSyncToDB(`${p}_name`, e.target.value)} />
+                  <label className="w-full cursor-pointer bg-zinc-800/80 border-2 border-dashed border-zinc-700 rounded-xl p-3 flex justify-center"><span className="text-sm text-zinc-400 font-bold">{uploading ? 'Uploading...' : '上傳圖片 (PNG)'}</span><input type="file" className="hidden" onChange={(e) => handleFileUpload(e, p as any)} /></label>
                   
-                  <div>
-                    <label className="text-xs uppercase text-zinc-500 font-bold">Player Name</label>
-                    <input 
-                      className="w-full bg-zinc-800/80 border-none rounded-xl p-3 mt-1 focus:ring-2 focus:ring-blue-500 text-white"
-                      value={match[`${p}_name`]} 
-                      onChange={(e) => handleChange(`${p}_name`, e.target.value)}
-                      onBlur={(e) => handleSyncToDB(`${p}_name`, e.target.value)}
-                    />
-                  </div>
-
-                  <div>
-                    <label className="text-xs uppercase text-zinc-500 font-bold">Upload Image</label>
-                    <label className="mt-2 w-full cursor-pointer bg-zinc-800/80 border-2 border-dashed border-zinc-700 hover:border-zinc-500 rounded-xl p-3 flex justify-center transition">
-                      <span className="text-sm text-zinc-400 font-bold">{uploading ? 'Uploading...' : '點擊上傳圖片 (PNG/JPG)'}</span>
-                      <input type="file" className="hidden" onChange={(e) => handleFileUpload(e, p as any)} />
-                    </label>
-                  </div>
-
-                  {/* 座標調整區 */}
                   <div className={`space-y-4 p-4 rounded-2xl ${editMode === 'screen' ? 'bg-zinc-800/50' : 'bg-purple-900/20'}`}>
-                    {[['size', '大小 Size', 10, 300], ['x', '水平 X', 0, 100], ['y', '垂直 Y', 0, 100]].map(([key, label, min, max]) => {
-                      
-                      // 💡 根據模式動態決定寫入資料庫的欄位名稱 (p1_size 還是 p1_stream_size)
+                    {[['size', '大小', 10, 300], ['x', '水平 X', 0, 100], ['y', '垂直 Y', 0, 100]].map(([key, label, min, max]) => {
                       const dbField = editMode === 'screen' ? `${p}_${key}` : `${p}_stream_${key}`;
                       const val = match[dbField] ?? (key === 'size' ? 100 : 50);
-
                       return (
                         <div key={key}>
-                          <label className="flex justify-between text-[10px] uppercase font-bold text-zinc-400 mb-1">{label}</label>
+                          <label className="text-[10px] uppercase font-bold text-zinc-400 mb-1">{label}</label>
                           <div className="flex items-center gap-3">
-                            <input 
-                              type="range" min={min} max={max} 
-                              value={val} 
-                              onChange={(e) => handleChange(dbField, parseInt(e.target.value))}
-                              onPointerUp={(e) => handleSyncToDB(dbField, parseInt(e.currentTarget.value))}
-                              className="flex-1 h-1 bg-zinc-700 rounded-lg appearance-none cursor-pointer"
-                            />
-                            <input 
-                              type="number"
-                              value={val}
-                              onChange={(e) => handleChange(dbField, parseInt(e.target.value) || 0)}
-                              onBlur={(e) => handleSyncToDB(dbField, parseInt(e.target.value) || 0)}
-                              className="w-16 bg-zinc-950 text-center text-white text-xs py-1 rounded border border-zinc-700 focus:outline-none focus:border-blue-500"
-                            />
+                            <input type="range" min={min} max={max} value={val} onChange={(e) => handleChange(dbField, parseInt(e.target.value))} onPointerUp={(e) => handleSyncToDB(dbField, parseInt(e.currentTarget.value))} className="flex-1 h-1 bg-zinc-700 rounded-lg cursor-pointer"/>
+                            <input type="number" value={val} onChange={(e) => handleChange(dbField, parseInt(e.target.value) || 0)} onBlur={(e) => handleSyncToDB(dbField, parseInt(e.target.value) || 0)} className="w-16 bg-zinc-950 text-center text-white text-xs py-1 rounded border border-zinc-700"/>
                           </div>
                         </div>
                       );
                     })}
                   </div>
                 </div>
-
-                {/* 右側預覽區 (會根據模式改變高度來幫助對位) */}
-                <div className={`w-48 bg-black border-2 rounded-xl overflow-hidden relative shrink-0 ${editMode === 'screen' ? 'h-64 border-zinc-700' : 'h-32 border-purple-700 mt-auto mb-auto'}`}>
-                  <div className="absolute top-2 left-2 text-[10px] text-zinc-300 z-10 bg-black/70 px-2 py-0.5 rounded font-bold">
-                    {editMode === 'screen' ? '大螢幕預覽' : '直播條預覽'}
-                  </div>
-                  <img 
-                    src={match[`${p}_avatar`]} 
-                    style={{ 
-                      transform: `translate(${currentX - 50}%, ${currentY - 50}%) scale(${currentSize / 100})`,
-                      transformOrigin: 'center center'
-                    }}
-                    className="w-full h-full object-contain pointer-events-none" 
-                    alt="Preview"
-                    onError={(e) => e.currentTarget.style.display = 'none'}
-                  />
+                <div className={`w-48 bg-black border-2 rounded-xl overflow-hidden relative shrink-0 ${editMode === 'screen' ? 'h-64 border-zinc-700' : 'h-32 border-purple-700 my-auto'}`}>
+                  <img src={match[`${p}_avatar`]} style={{ transform: `translate(${currentX - 50}%, ${currentY - 50}%) scale(${currentSize / 100})`, transformOrigin: 'center center' }} className="w-full h-full object-contain pointer-events-none" alt="Preview" />
                 </div>
-
               </div>
             );
           })}
