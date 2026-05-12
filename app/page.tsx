@@ -7,12 +7,10 @@ export default function VotePage() {
   const [match, setMatch] = useState<any>(null);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
   
-  // 💡 登入狀態管理
   const [user, setUser] = useState<any>(null);
   const [authLoading, setAuthLoading] = useState(true);
 
   useEffect(() => {
-    // 檢查 Google 登入狀態
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
       setAuthLoading(false);
@@ -21,14 +19,12 @@ export default function VotePage() {
       setUser(session?.user ?? null);
     });
 
-    // 💡 抓取 is_active = true 的「目前直播場次」
     const fetchMatch = () => {
       supabase.from('active_match').select('*').eq('is_active', true).single().then(({ data }) => setMatch(data));
     };
     fetchMatch();
     
-    // 即時更新 (過濾只接收目前這場的變化)
-    const channel = supabase.channel('realtime-mobile')
+    const channel = supabase.channel('realtime-mobile-v2')
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'active_match' }, (p) => {
         if (p.new.is_active) setMatch(p.new);
       }).subscribe();
@@ -46,17 +42,33 @@ export default function VotePage() {
   const handleVote = async (player: 1 | 2) => {
     if (!user) return;
     
-    // 💡 使用新的 cast_vote RPC，同時寫入抽獎紀錄與計票
+    // 💡 阻擋邏輯：如果投票已關閉，直接擋下
+    if (!match.is_voting_open) {
+      setToastMsg('🚫 投票已結束！');
+      setTimeout(() => setToastMsg(null), 1500);
+      return;
+    }
+    
+    // 取得 Google 帳號的名字與信箱
+    const email = user.email || '';
+    const name = user.user_metadata?.full_name || user.user_metadata?.name || 'Player';
+
+    // 💡 呼叫更新後的 cast_vote，把信箱跟名字送進去抽獎池
     const { error } = await supabase.rpc('cast_vote', { 
       v_match_id: match.id, 
       v_player: player, 
-      v_user_id: user.id 
+      v_user_id: user.id,
+      v_user_email: email,
+      v_user_name: name
     });
 
     if (error) {
       if (error.message.includes('unique constraint')) {
-        setToastMsg('❌ 您已經投過票囉！'); // 防止同場重複投票
+        setToastMsg('❌ 您已經投過票囉！'); 
+      } else if (error.message.includes('voting_closed')) {
+        setToastMsg('🚫 投票已結束！');
       } else {
+        alert(`資料庫回報錯誤: ${error.message}`);
         setToastMsg('❌ 投票發生錯誤');
       }
     } else {
@@ -70,7 +82,6 @@ export default function VotePage() {
 
   if (authLoading || !match) return <div className="h-screen w-screen bg-[#05050a] flex items-center justify-center text-white font-black italic tracking-widest text-3xl animate-pulse">LOADING...</div>;
 
-  // 💡 如果尚未登入，顯示全螢幕登入畫面
   if (!user) {
     return (
       <div className="h-[100dvh] w-full bg-[#020205] flex flex-col items-center justify-center p-6 text-white font-sans relative overflow-hidden">
@@ -86,10 +97,7 @@ export default function VotePage() {
             <p className="text-zinc-500 text-xs">請先登入帳號以確保抽獎資格與投票公平性</p>
           </div>
 
-          <button 
-            onClick={handleGoogleLogin}
-            className="w-full flex items-center justify-center gap-3 bg-white text-black font-bold py-4 rounded-xl hover:bg-zinc-200 transition-colors shadow-[0_0_20px_rgba(255,255,255,0.2)]"
-          >
+          <button onClick={handleGoogleLogin} className="w-full flex items-center justify-center gap-3 bg-white text-black font-bold py-4 rounded-xl hover:bg-zinc-200 transition-colors shadow-[0_0_20px_rgba(255,255,255,0.2)]">
             <img src="https://www.google.com/favicon.ico" className="w-5 h-5" alt="Google" />
             使用 Google 帳號登入
           </button>
@@ -98,12 +106,11 @@ export default function VotePage() {
     );
   }
 
-  // 以下為原本的投票介面 (只有登入後才會看到)
   const p1 = { x: match.p1_stream_x ?? 50, y: match.p1_stream_y ?? 50, size: match.p1_stream_size ?? 100 };
   const p2 = { x: match.p2_stream_x ?? 50, y: match.p2_stream_y ?? 50, size: match.p2_stream_size ?? 100 };
 
   return (
-    <div className="h-[100dvh] w-full bg-[#020205] flex flex-col overflow-hidden font-sans select-none text-white">
+    <div className="h-[100dvh] w-full bg-[#020205] flex flex-col overflow-hidden font-sans select-none text-white relative">
       
       <div className="relative md:absolute top-0 w-full z-30 pt-8 pb-4 md:pt-16 md:pb-24 flex flex-col items-center bg-gradient-to-b from-black via-black/80 to-transparent pointer-events-none shrink-0">
         <h1 className="text-[40px] md:text-[70px] leading-tight font-black italic text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-yellow-100 tracking-tighter uppercase drop-shadow-[0_0_20px_rgba(0,0,0,0.8)] pr-3">
@@ -113,6 +120,15 @@ export default function VotePage() {
       </div>
 
       <div className="flex-1 flex flex-col md:flex-row relative">
+        {/* 💡 如果投票關閉，蓋上一層半透明遮罩與大大警告字樣 */}
+        {!match.is_voting_open && (
+           <div className="absolute inset-0 z-40 bg-black/70 backdrop-blur-sm flex items-center justify-center">
+             <div className="text-4xl md:text-6xl font-black italic text-red-500 border-8 border-red-600 px-8 py-4 rounded-3xl rotate-[-10deg] tracking-widest bg-black/80 shadow-[0_0_80px_rgba(220,38,38,0.8)] backdrop-blur-none pointer-events-none uppercase">
+                Voting Closed
+             </div>
+           </div>
+        )}
+
         <motion.div whileTap={{ brightness: 1.6 }} onClick={() => handleVote(1)} className="flex-1 relative cursor-pointer group overflow-hidden border-b md:border-b-0 md:border-r border-white/5">
           <div className="absolute inset-0 bg-blue-900/20 z-0" />
           <div className="absolute inset-0 w-full h-full flex items-center justify-center">
