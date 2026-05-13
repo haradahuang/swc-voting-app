@@ -131,17 +131,17 @@ export default function StageScreenPage() {
         ))}
       </div>
 
-      {/* 🔵 修正 1：左半部藍方斜切立體艙 (顏色升級) */}
+      {/* 🔵 左半部藍方斜切立體艙 (顏色升級) */}
       <div 
         className="absolute left-0 top-0 h-full w-[53vw] bg-[#0a38b3] z-10 shadow-[0_0_50px_rgba(37,99,235,0.4)]" // 用亮藍色做外框
         style={{ clipPath: 'polygon(0 0, 100% 0, 85% 100%, 0 100%)' }} // 畫出梯形霓虹外框
       >
         {/* 深色內層 (製造邊框霓虹發光效果) */}
         <div 
-          className="absolute inset-0 bg-gradient-to-br from-[#0a38b3] via-[#051c5e] to-[#01020a]" // 深藍色漸層
+            className="absolute inset-0 bg-gradient-to-br from-[#0a38b3] via-[#051c5e] to-[#01020a]" // 深藍色漸層
           style={{ clipPath: 'polygon(0 0, calc(100% - 4px) 0, calc(85% - 4px) 100%, 0 100%)' }}
         >
-          {/* 💡 修正 2：中間 VS 處斜切螢光藍色條归位 */}
+          {/* 💡 修正 1：加回斜切發光螢光藍色條归位 */}
           <div className="absolute top-0 right-[-2px] h-full w-[4px] bg-[#00f2fe] z-15 shadow-[0_0_15px_rgba(0,242,254,0.8)]" />
 
           {/* 背景巨型隱水印數字 */}
@@ -180,10 +180,10 @@ export default function StageScreenPage() {
       >
         {/* 深色內層 (製造邊框霓虹發光效果) */}
         <div 
-          className="absolute inset-0 bg-gradient-to-bl from-[#c20a1f] via-[#6b030e] to-[#080102]" // 深紅色漸層
+            className="absolute inset-0 bg-gradient-to-bl from-[#c20a1f] via-[#6b030e] to-[#080102]" // 深紅色漸層
           style={{ clipPath: 'polygon(calc(15% + 4px) 0, 100% 0, 100% 100%, 4px 100%)' }}
         >
-          {/* 💡 修正 2：中間 VS 處斜切螢光紅色條归位 */}
+          {/* 💡 修正 1：加回斜切發光螢光紅色條归位 */}
           <div className="absolute top-0 left-[-2px] h-full w-[4px] bg-[#ff003c] z-15 shadow-[0_0_15px_rgba(255,0,60,0.8)]" />
 
           {/* 背景巨型隱水印數字 */}
@@ -215,7 +215,7 @@ export default function StageScreenPage() {
         </div>
       </div>
 
-      {/* ⚔️ 畫面頂層 UI */}
+      {/* ⚔️ 畫面頂層 UI與專業活動品牌 */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 z-40 bg-zinc-950 px-12 py-3 rounded-b-2xl border-b-2 border-x-2 border-zinc-800 shadow-[0_10px_30px_rgba(0,0,0,0.8)]">
         <h1 className="text-sm font-bold text-zinc-300 tracking-[0.5em] uppercase">Predicted Exit Poll</h1>
       </div>
@@ -233,7 +233,7 @@ export default function StageScreenPage() {
         </motion.div>
       )}
 
-      {/* 🏆 抽獎揭曉全畫面 (保持 AC 結合邏輯) */}
+      {/* 🏆 抽獎揭曉全畫面 (保持AC結合邏輯，強制 slice(0, 3) 只顯示3人以防溢出) */}
       <AnimatePresence>
         {match.show_lottery && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 z-50 bg-black/85 backdrop-blur-lg flex flex-col items-center justify-center font-sans overflow-hidden">
@@ -243,7 +243,7 @@ export default function StageScreenPage() {
               
               <div className="w-full relative h-[500px]">
                 {isSpinning ? (
-                   <div className="absolute inset-0 w-full flex flex-col items-center justify-start gap-6">
+                   <div className="absolute inset-0 w-full flex flex-col items-center justify-start gap-6 overflow-hidden">
                      {spinningNames.slice(0, 3).map((name, i) => (
                        <div key={i} className="bg-zinc-900/50 border border-zinc-700 w-full rounded-2xl py-6 px-10 text-center animate-pulse">
                          <span className="text-6xl font-black text-zinc-400 tracking-widest blur-[1px]">{name}</span>
