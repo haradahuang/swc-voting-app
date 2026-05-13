@@ -4,7 +4,7 @@ import { supabase } from '@/lib/supabase';
 import { motion, AnimatePresence } from 'framer-motion';
 import QRCode from 'react-qr-code';
 
-// 動態雲霧設定 (強化亮度與彩度)
+// 動態雲霧設定 
 const nebulaVariants = {
   animate: (i: number) => ({
     x: [i % 2 === 0 ? -100 : 100, i % 2 === 0 ? 100 : -100],
@@ -85,7 +85,7 @@ export default function StageScreenPage() {
     }
   }, [match?.show_lottery, isSpinning, match?.lottery_winners]);
 
-  if (!match) return <div className="min-h-screen bg-[#000]" />;
+  if (!match) return <div className="min-h-screen bg-black" />;
 
   const total = match.p1_votes + match.p2_votes;
   const p1Rate = total === 0 ? 50 : (match.p1_votes / total) * 100;
@@ -93,10 +93,11 @@ export default function StageScreenPage() {
   const [p1Int, p1Dec] = p1Rate.toFixed(1).split('.');
   const [p2Int, p2Dec] = p2Rate.toFixed(1).split('.');
 
+  // 💡 修正 1：選手名字巨大化 (基礎大小 110px)
   const maxNameLen = Math.max(match.p1_name?.length || 0, match.p2_name?.length || 0);
-  let nameTextClass = "text-[65px] mb-2";
-  if (maxNameLen >= 8) nameTextClass = "text-[40px] mb-4";
-  else if (maxNameLen >= 5) nameTextClass = "text-[50px] mb-3";
+  let nameTextClass = "text-[110px] mb-2 leading-none";
+  if (maxNameLen >= 8) nameTextClass = "text-[70px] mb-4 leading-none";
+  else if (maxNameLen >= 5) nameTextClass = "text-[90px] mb-3 leading-none";
 
   // Email 精準遮蔽
   const maskEmail = (email: string) => {
@@ -122,7 +123,7 @@ export default function StageScreenPage() {
             animate="animate"
             className="absolute w-[900px] h-[900px] rounded-full mix-blend-screen"
             style={{
-              background: i % 2 === 0 ? 'rgba(37,99,235,0.7)' : 'rgba(220,38,38,0.6)', 
+              background: i % 2 === 0 ? 'radial-gradient(circle, rgba(37,99,235,0.7) 0%, rgba(0,0,0,0) 70%)' : 'radial-gradient(circle, rgba(220,38,38,0.6) 0%, rgba(0,0,0,0) 70%)', 
               filter: 'blur(150px)',
               left: `${(i % 2) * 50 - 10}%`,
               top: `${Math.floor(i / 2) * 50 - 10}%`,
@@ -156,22 +157,18 @@ export default function StageScreenPage() {
             />
           </div>
 
-          {/* 背景巨型隱水印數字 */}
           <div className="absolute left-[5%] top-[8%] text-[450px] font-black italic text-blue-500/15 leading-none pointer-events-none z-0 tracking-tighter">
             {p1Int}
           </div>
 
-          {/* 選手半身照 */}
           <div className="absolute inset-0 flex items-center justify-center pt-10 z-10">
             {match.p1_avatar && (
               <img src={match.p1_avatar} style={{ transform: `translate(${match.p1_x - 50}%, ${match.p1_y - 50}%) scale(${match.p1_size / 100})`, transformOrigin: 'center center' }} className="absolute w-[900px] h-[900px] object-contain max-w-none drop-shadow-[0_20px_40px_rgba(0,0,0,0.8)]" alt={match.p1_name} />
             )}
           </div>
 
-          {/* 半身照融合漸層 */}
           <div className="absolute bottom-0 left-0 w-full h-[25vh] bg-gradient-to-t from-[#01020a] via-[#01020a]/80 to-transparent z-20"></div>
 
-          {/* 資訊看板 */}
           <div className="absolute bottom-16 w-full flex flex-col items-center pr-[10%] z-30">
             <h2 className={`${nameTextClass} font-black text-white italic tracking-widest drop-shadow-[0_5px_15px_rgba(0,0,0,1)]`}>{match.p1_name}</h2>
             <div className="flex items-baseline gap-6 bg-blue-950/60 px-10 py-3 rounded-3xl border border-blue-500/30 backdrop-blur-md shadow-[0_10px_30px_rgba(0,0,0,0.8)]">
@@ -209,22 +206,18 @@ export default function StageScreenPage() {
             />
           </div>
 
-          {/* 背景巨型隱水印數字 */}
           <div className="absolute right-[5%] top-[8%] text-[450px] font-black italic text-red-500/15 leading-none pointer-events-none z-0 tracking-tighter">
             {p2Int}
           </div>
 
-          {/* 選手半身照 */}
           <div className="absolute inset-0 flex items-center justify-center pt-10 z-10">
             {match.p2_avatar && (
               <img src={match.p2_avatar} style={{ transform: `translate(${match.p2_x - 50}%, ${match.p2_y - 50}%) scale(${match.p2_size / 100})`, transformOrigin: 'center center' }} className="absolute w-[900px] h-[900px] object-contain max-w-none drop-shadow-[0_20px_40px_rgba(0,0,0,0.8)]" alt={match.p2_name} />
             )}
           </div>
 
-          {/* 半身照融合漸層 */}
           <div className="absolute bottom-0 left-0 w-full h-[25vh] bg-gradient-to-t from-[#080102] via-[#080102]/80 to-transparent z-20"></div>
 
-          {/* 資訊看板 */}
           <div className="absolute bottom-16 w-full flex flex-col items-center pl-[10%] z-30">
             <h2 className={`${nameTextClass} font-black text-white italic tracking-widest drop-shadow-[0_5px_15px_rgba(0,0,0,1)]`}>{match.p2_name}</h2>
             <div className="flex items-baseline gap-6 bg-red-950/60 px-10 py-3 rounded-3xl border border-red-500/30 backdrop-blur-md shadow-[0_10px_30px_rgba(0,0,0,0.8)] flex-row-reverse">
@@ -239,7 +232,7 @@ export default function StageScreenPage() {
 
       {/* ================= ⚔️ 畫面頂層 UI ================= */}
       
-      {/* 💡 修正 1：螢光深藍色 (#003cff) 與 螢光紅色條 */}
+      {/* 螢光線條 */}
       <div className="absolute left-0 top-0 h-full w-[53vw] z-20 pointer-events-none" style={{ filter: 'drop-shadow(0 0 15px #003cff)' }}>
         <div className="absolute left-0 top-0 h-full w-full bg-[#003cff]" style={{ clipPath: 'polygon(calc(100% - 4px) 0, 100% 0, 85% 100%, calc(85% - 4px) 100%)' }}></div>
       </div>
@@ -247,15 +240,24 @@ export default function StageScreenPage() {
         <div className="absolute left-0 top-0 h-full w-full bg-[#ff003c]" style={{ clipPath: 'polygon(15% 0, calc(15% + 4px) 0, 4px 100%, 0 100%)' }}></div>
       </div>
 
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 z-40 bg-zinc-950 px-12 py-3 rounded-b-2xl border-b-2 border-x-2 border-zinc-800 shadow-[0_10px_30px_rgba(0,0,0,0.8)]">
-        <h1 className="text-sm font-bold text-zinc-300 tracking-[0.5em] uppercase">Predicted Exit Poll</h1>
+      {/* 💡 修正 3：頂層標題修改為 LIVE VOTE 與 賽事名稱，並置中 */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 z-40 bg-zinc-950 px-16 py-4 rounded-b-3xl border-b-2 border-x-2 border-zinc-800 shadow-[0_10px_30px_rgba(0,0,0,0.8)] flex flex-col items-center justify-center">
+        <h1 className="text-3xl font-black text-white tracking-[0.3em] uppercase drop-shadow-md">LIVE VOTE</h1>
+        {match.tournament_name && (
+          <div className="text-sm font-bold text-zinc-400 tracking-[0.2em] mt-1 uppercase">{match.tournament_name}</div>
+        )}
       </div>
 
+      {/* 💡 修正 2：VS 改為金色外圈 */}
       <div className="absolute left-1/2 top-[45%] -translate-x-1/2 -translate-y-1/2 z-40">
-        <div className="bg-black text-white italic font-black text-6xl rounded-full w-28 h-28 flex items-center justify-center border-4 border-zinc-700 shadow-[0_0_60px_rgba(0,0,0,1)]">VS</div>
+        <div className="rounded-full p-[4px] bg-gradient-to-br from-yellow-300 via-yellow-500 to-yellow-700 shadow-[0_0_40px_rgba(234,179,8,0.6)]">
+          <div className="bg-black text-white italic font-black text-6xl rounded-full w-28 h-28 flex items-center justify-center">
+            VS
+          </div>
+        </div>
       </div>
 
-      {/* 💡 修正 2：QR Code 精準移至右側籃框位置 (絕對比例定位) */}
+      {/* QR Code */}
       {!match.show_lottery && originUrl && (
         <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 1 }} className="absolute bottom-[25%] right-[3%] z-40 bg-black/90 backdrop-blur-xl p-4 rounded-3xl border border-red-900/60 shadow-[0_0_50px_rgba(0,0,0,0.9)] flex flex-col items-center">
           <div className="flex items-center gap-2 mb-3"><div className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></div><h3 className="text-white font-bold text-[11px] tracking-[0.2em] uppercase">Scan To Vote</h3></div>
@@ -272,7 +274,6 @@ export default function StageScreenPage() {
               <div className="w-full relative h-[500px]">
                 {isSpinning ? (
                    <div className="absolute inset-0 w-full flex flex-col items-center justify-start gap-6">
-                     {/* 💡 修正 3：強制只顯示 3 人，防止破版 */}
                      {spinningNames.slice(0, 3).map((name, i) => (
                        <div key={i} className="bg-zinc-900/50 border border-zinc-700 w-full rounded-2xl py-6 px-10 text-center animate-pulse"><span className="text-6xl font-black text-zinc-400 tracking-widest blur-[1px]">{name}</span></div>
                      ))}
@@ -280,7 +281,6 @@ export default function StageScreenPage() {
                 ) : (
                    <AnimatePresence mode="wait">
                      <motion.div key={lotteryPage} initial={{ opacity: 0, x: 50 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -50 }} transition={{ duration: 0.3 }} className="absolute inset-0 w-full flex flex-col items-center justify-start gap-6 overflow-hidden">
-                       {/* 💡 修正 3：強制只顯示 3 人，防止破版 */}
                        {currentWinners.slice(0, 3).map((w: any, idx: number) => (
                          <div key={idx} className="bg-gradient-to-r from-yellow-900/30 via-yellow-600/20 to-yellow-900/30 border border-yellow-500/40 w-full rounded-2xl py-6 px-10 flex flex-col items-center justify-center relative overflow-hidden shadow-lg">
                            <div className="absolute inset-0 bg-yellow-400/5 animate-pulse mix-blend-overlay"></div>
