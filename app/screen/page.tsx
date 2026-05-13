@@ -176,10 +176,11 @@ export default function StageScreenPage() {
               className="bg-gradient-to-b from-zinc-900 to-black border-4 border-yellow-500/50 p-12 rounded-[3rem] shadow-[0_0_150px_rgba(250,204,21,0.4)] relative flex flex-col items-center min-w-[800px]"
             >
               <h2 className="text-yellow-400 text-6xl font-black italic tracking-[0.3em] uppercase mb-12 drop-shadow-[0_0_30px_rgba(250,204,21,0.8)]">
-                WINNERS
+                WINNER
               </h2>
 
-              <div className="w-full flex flex-col items-center justify-center min-h-[350px]">
+              {/* THIS is the container to modify */}
+              <div className="w-full flex flex-col items-center justify-start min-h-[500px]">
                 {/* 3秒拉霸機效果 */}
                 {isSpinning ? (
                    <div className="w-full flex flex-col items-center justify-center gap-6 overflow-hidden">
@@ -217,7 +218,7 @@ export default function StageScreenPage() {
         )}
       </AnimatePresence>
 
-      {/* QR Code */}
+      {/* 💡 QR Code 移動到右下方 (獨立 UI 元素) */}
       {!match.show_lottery && originUrl && (
         <motion.div initial={{ opacity: 0, x: 50 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 1 }} className="absolute bottom-12 right-12 z-40 bg-black/80 backdrop-blur-xl p-4 rounded-3xl border border-red-900/50 shadow-[0_0_40px_rgba(0,0,0,0.8)] flex flex-col items-center">
           <div className="flex items-center gap-2 mb-3"><div className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></div><h3 className="text-white font-bold text-sm tracking-widest uppercase">Scan To Vote</h3></div>
