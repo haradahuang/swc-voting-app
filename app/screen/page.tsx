@@ -85,7 +85,7 @@ export default function StageScreenPage() {
     }
   }, [match?.show_lottery, isSpinning, match?.lottery_winners]);
 
-  if (!match) return <div className="min-h-screen bg-black" />;
+  if (!match) return <div className="min-h-screen bg-[#000]" />;
 
   const total = match.p1_votes + match.p2_votes;
   const p1Rate = total === 0 ? 50 : (match.p1_votes / total) * 100;
@@ -112,7 +112,26 @@ export default function StageScreenPage() {
   return (
     <div className="h-[100dvh] w-screen bg-black flex overflow-hidden font-sans select-none relative">
       
-      {/* ================= 🔵 左半部：藍方斜切立體艙 ================= */}
+      {/* 🌌 最深層：動態雲霧背景 */}
+      <div className="absolute inset-0 z-0 overflow-hidden bg-[#020205]">
+        {[0, 1, 2, 3].map((i) => (
+          <motion.div
+            key={i}
+            custom={i}
+            variants={nebulaVariants}
+            animate="animate"
+            className="absolute w-[900px] h-[900px] rounded-full mix-blend-screen"
+            style={{
+              background: i % 2 === 0 ? 'rgba(37,99,235,0.7)' : 'rgba(220,38,38,0.6)', 
+              filter: 'blur(150px)',
+              left: `${(i % 2) * 50 - 10}%`,
+              top: `${Math.floor(i / 2) * 50 - 10}%`,
+            }}
+          />
+        ))}
+      </div>
+
+      {/* 🔵 左半部藍方斜切立體艙 */}
       <div 
         className="absolute left-0 top-0 h-full w-[53vw] bg-[#020617] z-10 shadow-[0_0_50px_rgba(37,99,235,0.4)]"
         style={{ clipPath: 'polygon(0 0, 100% 0, 85% 100%, 0 100%)' }}
@@ -121,7 +140,7 @@ export default function StageScreenPage() {
           className="absolute inset-0 bg-gradient-to-br from-[#050f29] via-[#020617] to-[#01020a]"
           style={{ clipPath: 'polygon(0 0, calc(100% - 4px) 0, calc(85% - 4px) 100%, 0 100%)' }}
         >
-          {/* 專屬藍色動態雲霧 (直接放在藍色區塊內) */}
+          {/* 專屬藍色動態雲霧 */}
           <div className="absolute inset-0 overflow-hidden z-0 pointer-events-none">
             <motion.div
               animate={{ x: [-80, 80, -80], y: [-50, 50, -50], scale: [1, 1.3, 1], opacity: [0.6, 1, 0.6] }}
@@ -137,7 +156,7 @@ export default function StageScreenPage() {
             />
           </div>
 
-          {/* 💡 修正 2：背景巨型隱水印數字 - 移至左側黃框處，並放大尺寸 */}
+          {/* 背景巨型隱水印數字 */}
           <div className="absolute left-[5%] top-[8%] text-[450px] font-black italic text-blue-500/15 leading-none pointer-events-none z-0 tracking-tighter">
             {p1Int}
           </div>
@@ -152,7 +171,7 @@ export default function StageScreenPage() {
           {/* 半身照融合漸層 */}
           <div className="absolute bottom-0 left-0 w-full h-[25vh] bg-gradient-to-t from-[#01020a] via-[#01020a]/80 to-transparent z-20"></div>
 
-          {/* 資訊看板 (數字在外側) */}
+          {/* 資訊看板 */}
           <div className="absolute bottom-16 w-full flex flex-col items-center pr-[10%] z-30">
             <h2 className={`${nameTextClass} font-black text-white italic tracking-widest drop-shadow-[0_5px_15px_rgba(0,0,0,1)]`}>{match.p1_name}</h2>
             <div className="flex items-baseline gap-6 bg-blue-950/60 px-10 py-3 rounded-3xl border border-blue-500/30 backdrop-blur-md shadow-[0_10px_30px_rgba(0,0,0,0.8)]">
@@ -174,7 +193,7 @@ export default function StageScreenPage() {
           className="absolute inset-0 bg-gradient-to-bl from-[#2e0509] via-[#0f0103] to-[#080102]"
           style={{ clipPath: 'polygon(calc(15% + 4px) 0, 100% 0, 100% 100%, 4px 100%)' }}
         >
-          {/* 專屬紅色動態雲霧 (直接放在紅色區塊內) */}
+          {/* 專屬紅色動態雲霧 */}
           <div className="absolute inset-0 overflow-hidden z-0 pointer-events-none">
             <motion.div
               animate={{ x: [80, -80, 80], y: [50, -50, 50], scale: [1, 1.3, 1], opacity: [0.6, 1, 0.6] }}
@@ -190,7 +209,7 @@ export default function StageScreenPage() {
             />
           </div>
 
-          {/* 💡 修正 2：背景巨型隱水印數字 - 移至右側黃框處，並放大尺寸 */}
+          {/* 背景巨型隱水印數字 */}
           <div className="absolute right-[5%] top-[8%] text-[450px] font-black italic text-red-500/15 leading-none pointer-events-none z-0 tracking-tighter">
             {p2Int}
           </div>
@@ -205,7 +224,7 @@ export default function StageScreenPage() {
           {/* 半身照融合漸層 */}
           <div className="absolute bottom-0 left-0 w-full h-[25vh] bg-gradient-to-t from-[#080102] via-[#080102]/80 to-transparent z-20"></div>
 
-          {/* 資訊看板 (數字在外側) */}
+          {/* 資訊看板 */}
           <div className="absolute bottom-16 w-full flex flex-col items-center pl-[10%] z-30">
             <h2 className={`${nameTextClass} font-black text-white italic tracking-widest drop-shadow-[0_5px_15px_rgba(0,0,0,1)]`}>{match.p2_name}</h2>
             <div className="flex items-baseline gap-6 bg-red-950/60 px-10 py-3 rounded-3xl border border-red-500/30 backdrop-blur-md shadow-[0_10px_30px_rgba(0,0,0,0.8)] flex-row-reverse">
@@ -220,9 +239,9 @@ export default function StageScreenPage() {
 
       {/* ================= ⚔️ 畫面頂層 UI ================= */}
       
-      {/* 💡 修正 1：加回斜切發光螢光色條 (利用高階混合模式確保邊界完美發光) */}
-      <div className="absolute left-0 top-0 h-full w-[53vw] z-20 pointer-events-none" style={{ filter: 'drop-shadow(0 0 15px #00f2fe)' }}>
-        <div className="absolute left-0 top-0 h-full w-full bg-[#00f2fe]" style={{ clipPath: 'polygon(calc(100% - 4px) 0, 100% 0, 85% 100%, calc(85% - 4px) 100%)' }}></div>
+      {/* 💡 修正 1：螢光深藍色 (#003cff) 與 螢光紅色條 */}
+      <div className="absolute left-0 top-0 h-full w-[53vw] z-20 pointer-events-none" style={{ filter: 'drop-shadow(0 0 15px #003cff)' }}>
+        <div className="absolute left-0 top-0 h-full w-full bg-[#003cff]" style={{ clipPath: 'polygon(calc(100% - 4px) 0, 100% 0, 85% 100%, calc(85% - 4px) 100%)' }}></div>
       </div>
       <div className="absolute right-0 top-0 h-full w-[53vw] z-20 pointer-events-none" style={{ filter: 'drop-shadow(0 0 15px #ff003c)' }}>
         <div className="absolute left-0 top-0 h-full w-full bg-[#ff003c]" style={{ clipPath: 'polygon(15% 0, calc(15% + 4px) 0, 4px 100%, 0 100%)' }}></div>
@@ -236,11 +255,11 @@ export default function StageScreenPage() {
         <div className="bg-black text-white italic font-black text-6xl rounded-full w-28 h-28 flex items-center justify-center border-4 border-zinc-700 shadow-[0_0_60px_rgba(0,0,0,1)]">VS</div>
       </div>
 
-      {/* 💡 修正 3：QR Code 移至右下方籃框處 (向上方/左方移動對齊版面) */}
+      {/* 💡 修正 2：QR Code 精準移至右側籃框位置 (絕對比例定位) */}
       {!match.show_lottery && originUrl && (
-        <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 1 }} className="absolute bottom-20 right-8 z-40 bg-black/90 backdrop-blur-xl p-4 rounded-3xl border border-red-900/60 shadow-[0_0_50px_rgba(0,0,0,0.9)] flex flex-col items-center">
+        <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 1 }} className="absolute bottom-[25%] right-[3%] z-40 bg-black/90 backdrop-blur-xl p-4 rounded-3xl border border-red-900/60 shadow-[0_0_50px_rgba(0,0,0,0.9)] flex flex-col items-center">
           <div className="flex items-center gap-2 mb-3"><div className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></div><h3 className="text-white font-bold text-[11px] tracking-[0.2em] uppercase">Scan To Vote</h3></div>
-          <div className="bg-white p-2 rounded-2xl shadow-inner"><QRCode value={originUrl} size={100} level="H" /></div>
+          <div className="bg-white p-2 rounded-2xl shadow-inner"><QRCode value={originUrl} size={110} level="H" /></div>
         </motion.div>
       )}
 
@@ -253,6 +272,7 @@ export default function StageScreenPage() {
               <div className="w-full relative h-[500px]">
                 {isSpinning ? (
                    <div className="absolute inset-0 w-full flex flex-col items-center justify-start gap-6">
+                     {/* 💡 修正 3：強制只顯示 3 人，防止破版 */}
                      {spinningNames.slice(0, 3).map((name, i) => (
                        <div key={i} className="bg-zinc-900/50 border border-zinc-700 w-full rounded-2xl py-6 px-10 text-center animate-pulse"><span className="text-6xl font-black text-zinc-400 tracking-widest blur-[1px]">{name}</span></div>
                      ))}
@@ -260,6 +280,7 @@ export default function StageScreenPage() {
                 ) : (
                    <AnimatePresence mode="wait">
                      <motion.div key={lotteryPage} initial={{ opacity: 0, x: 50 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -50 }} transition={{ duration: 0.3 }} className="absolute inset-0 w-full flex flex-col items-center justify-start gap-6 overflow-hidden">
+                       {/* 💡 修正 3：強制只顯示 3 人，防止破版 */}
                        {currentWinners.slice(0, 3).map((w: any, idx: number) => (
                          <div key={idx} className="bg-gradient-to-r from-yellow-900/30 via-yellow-600/20 to-yellow-900/30 border border-yellow-500/40 w-full rounded-2xl py-6 px-10 flex flex-col items-center justify-center relative overflow-hidden shadow-lg">
                            <div className="absolute inset-0 bg-yellow-400/5 animate-pulse mix-blend-overlay"></div>
