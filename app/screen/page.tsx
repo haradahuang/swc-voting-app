@@ -4,6 +4,22 @@ import { supabase } from '@/lib/supabase';
 import { motion, AnimatePresence } from 'framer-motion';
 import QRCode from 'react-qr-code';
 
+// 動態雲霧設定 (強化亮度與彩度)
+const nebulaVariants = {
+  animate: (i: number) => ({
+    x: [i % 2 === 0 ? -100 : 100, i % 2 === 0 ? 100 : -100],
+    y: [i < 2 ? -50 : 50, i < 2 ? 50 : -50],
+    scale: [1, 1.4, 0.8, 1],
+    opacity: [0.6, 1, 0.6], 
+    transition: {
+      duration: 15 + i * 3,
+      repeat: Infinity,
+      repeatType: 'reverse' as const,
+      ease: 'linear',
+    },
+  }),
+};
+
 export default function StageScreenPage() {
   const [match, setMatch] = useState<any>(null);
   const [originUrl, setOriginUrl] = useState<string>('');
@@ -105,7 +121,7 @@ export default function StageScreenPage() {
           className="absolute inset-0 bg-gradient-to-br from-[#050f29] via-[#020617] to-[#01020a]"
           style={{ clipPath: 'polygon(0 0, calc(100% - 4px) 0, calc(85% - 4px) 100%, 0 100%)' }}
         >
-          {/* 💡 修正區：專屬藍色動態雲霧 (直接放在藍色區塊內) */}
+          {/* 專屬藍色動態雲霧 (直接放在藍色區塊內) */}
           <div className="absolute inset-0 overflow-hidden z-0 pointer-events-none">
             <motion.div
               animate={{ x: [-80, 80, -80], y: [-50, 50, -50], scale: [1, 1.3, 1], opacity: [0.6, 1, 0.6] }}
@@ -121,8 +137,8 @@ export default function StageScreenPage() {
             />
           </div>
 
-          {/* 背景巨型隱水印數字 */}
-          <div className="absolute right-[15%] top-[15%] text-[300px] font-black italic text-blue-500/10 leading-none pointer-events-none z-0">
+          {/* 💡 修正 2：背景巨型隱水印數字 - 移至左側黃框處，並放大尺寸 */}
+          <div className="absolute left-[5%] top-[8%] text-[450px] font-black italic text-blue-500/15 leading-none pointer-events-none z-0 tracking-tighter">
             {p1Int}
           </div>
 
@@ -158,7 +174,7 @@ export default function StageScreenPage() {
           className="absolute inset-0 bg-gradient-to-bl from-[#2e0509] via-[#0f0103] to-[#080102]"
           style={{ clipPath: 'polygon(calc(15% + 4px) 0, 100% 0, 100% 100%, 4px 100%)' }}
         >
-          {/* 💡 修正區：專屬紅色動態雲霧 (直接放在紅色區塊內) */}
+          {/* 專屬紅色動態雲霧 (直接放在紅色區塊內) */}
           <div className="absolute inset-0 overflow-hidden z-0 pointer-events-none">
             <motion.div
               animate={{ x: [80, -80, 80], y: [50, -50, 50], scale: [1, 1.3, 1], opacity: [0.6, 1, 0.6] }}
@@ -174,8 +190,8 @@ export default function StageScreenPage() {
             />
           </div>
 
-          {/* 背景巨型隱水印數字 */}
-          <div className="absolute left-[15%] top-[15%] text-[300px] font-black italic text-red-500/10 leading-none pointer-events-none z-0">
+          {/* 💡 修正 2：背景巨型隱水印數字 - 移至右側黃框處，並放大尺寸 */}
+          <div className="absolute right-[5%] top-[8%] text-[450px] font-black italic text-red-500/15 leading-none pointer-events-none z-0 tracking-tighter">
             {p2Int}
           </div>
 
@@ -203,6 +219,15 @@ export default function StageScreenPage() {
       </div>
 
       {/* ================= ⚔️ 畫面頂層 UI ================= */}
+      
+      {/* 💡 修正 1：加回斜切發光螢光色條 (利用高階混合模式確保邊界完美發光) */}
+      <div className="absolute left-0 top-0 h-full w-[53vw] z-20 pointer-events-none" style={{ filter: 'drop-shadow(0 0 15px #00f2fe)' }}>
+        <div className="absolute left-0 top-0 h-full w-full bg-[#00f2fe]" style={{ clipPath: 'polygon(calc(100% - 4px) 0, 100% 0, 85% 100%, calc(85% - 4px) 100%)' }}></div>
+      </div>
+      <div className="absolute right-0 top-0 h-full w-[53vw] z-20 pointer-events-none" style={{ filter: 'drop-shadow(0 0 15px #ff003c)' }}>
+        <div className="absolute left-0 top-0 h-full w-full bg-[#ff003c]" style={{ clipPath: 'polygon(15% 0, calc(15% + 4px) 0, 4px 100%, 0 100%)' }}></div>
+      </div>
+
       <div className="absolute top-0 left-1/2 -translate-x-1/2 z-40 bg-zinc-950 px-12 py-3 rounded-b-2xl border-b-2 border-x-2 border-zinc-800 shadow-[0_10px_30px_rgba(0,0,0,0.8)]">
         <h1 className="text-sm font-bold text-zinc-300 tracking-[0.5em] uppercase">Predicted Exit Poll</h1>
       </div>
@@ -211,10 +236,11 @@ export default function StageScreenPage() {
         <div className="bg-black text-white italic font-black text-6xl rounded-full w-28 h-28 flex items-center justify-center border-4 border-zinc-700 shadow-[0_0_60px_rgba(0,0,0,1)]">VS</div>
       </div>
 
+      {/* 💡 修正 3：QR Code 移至右下方籃框處 (向上方/左方移動對齊版面) */}
       {!match.show_lottery && originUrl && (
-        <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 1 }} className="absolute bottom-12 right-12 z-40 bg-black/90 backdrop-blur-xl p-5 rounded-3xl border border-red-900/60 shadow-[0_0_50px_rgba(0,0,0,0.9)] flex flex-col items-center">
-          <div className="flex items-center gap-2 mb-4"><div className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse"></div><h3 className="text-white font-bold text-xs tracking-[0.2em] uppercase">Scan To Vote</h3></div>
-          <div className="bg-white p-2.5 rounded-2xl shadow-inner"><QRCode value={originUrl} size={110} level="H" /></div>
+        <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 1 }} className="absolute bottom-20 right-8 z-40 bg-black/90 backdrop-blur-xl p-4 rounded-3xl border border-red-900/60 shadow-[0_0_50px_rgba(0,0,0,0.9)] flex flex-col items-center">
+          <div className="flex items-center gap-2 mb-3"><div className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></div><h3 className="text-white font-bold text-[11px] tracking-[0.2em] uppercase">Scan To Vote</h3></div>
+          <div className="bg-white p-2 rounded-2xl shadow-inner"><QRCode value={originUrl} size={100} level="H" /></div>
         </motion.div>
       )}
 
