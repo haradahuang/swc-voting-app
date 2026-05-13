@@ -4,6 +4,22 @@ import { supabase } from '@/lib/supabase';
 import { motion, AnimatePresence } from 'framer-motion';
 import QRCode from 'react-qr-code';
 
+// 動態雲霧設定 
+const nebulaVariants = {
+  animate: (i: number) => ({
+    x: [i % 2 === 0 ? -100 : 100, i % 2 === 0 ? 100 : -100],
+    y: [i < 2 ? -50 : 50, i < 2 ? 50 : -50],
+    scale: [1, 1.4, 0.8, 1],
+    opacity: [0.6, 1, 0.6], 
+    transition: {
+      duration: 15 + i * 3,
+      repeat: Infinity,
+      repeatType: 'reverse' as const,
+      ease: 'linear',
+    },
+  }),
+};
+
 export default function StageScreenPage() {
   const [match, setMatch] = useState<any>(null);
   const [originUrl, setOriginUrl] = useState<string>('');
@@ -77,11 +93,13 @@ export default function StageScreenPage() {
   const [p1Int, p1Dec] = p1Rate.toFixed(1).split('.');
   const [p2Int, p2Dec] = p2Rate.toFixed(1).split('.');
 
+  // 💡 修正 1：選手名字巨大化 (基礎大小 110px)
   const maxNameLen = Math.max(match.p1_name?.length || 0, match.p2_name?.length || 0);
   let nameTextClass = "text-[110px] mb-2 leading-none";
   if (maxNameLen >= 8) nameTextClass = "text-[70px] mb-4 leading-none";
   else if (maxNameLen >= 5) nameTextClass = "text-[90px] mb-3 leading-none";
 
+  // Email 精準遮蔽
   const maskEmail = (email: string) => {
     if (!email) return '';
     const [name, domain] = email.split('@');
@@ -95,33 +113,26 @@ export default function StageScreenPage() {
   return (
     <div className="h-[100dvh] w-screen bg-black flex overflow-hidden font-sans select-none relative">
       
-      {/* 🌌 最深層：中央底部的真實雲霧 */}
+      {/* 🌌 最深層：動態雲霧背景 */}
       <div className="absolute inset-0 z-0 overflow-hidden bg-[#020205]">
-        {[0, 1].map((i) => (
+        {[0, 1, 2, 3].map((i) => (
           <motion.div
             key={i}
-            animate={{
-              x: [i % 2 === 0 ? -80 : 80, i % 2 === 0 ? 80 : -80],
-              y: [i < 1 ? -30 : 30, i < 1 ? 30 : -30],
-              scale: [1, 1.2, 1],
-              opacity: [0.15, 0.3, 0.15],
-            }}
-            transition={{ duration: 25 + i * 5, repeat: Infinity, ease: 'easeInOut' }}
-            className="absolute w-[1500px] h-[1500px] mix-blend-screen pointer-events-none"
+            custom={i}
+            variants={nebulaVariants}
+            animate="animate"
+            className="absolute w-[900px] h-[900px] rounded-full mix-blend-screen"
             style={{
-              backgroundImage: "url('/cloud.png')",
-              backgroundSize: 'contain',
-              backgroundRepeat: 'no-repeat',
-              backgroundPosition: 'center',
-              left: `${(i % 2) * 40 - 20}%`,
-              top: `${i * 30 - 10}%`,
-              filter: 'blur(15px)', // 最深層雲朵比較模糊
+              background: i % 2 === 0 ? 'radial-gradient(circle, rgba(37,99,235,0.7) 0%, rgba(0,0,0,0) 70%)' : 'radial-gradient(circle, rgba(220,38,38,0.6) 0%, rgba(0,0,0,0) 70%)', 
+              filter: 'blur(150px)',
+              left: `${(i % 2) * 50 - 10}%`,
+              top: `${Math.floor(i / 2) * 50 - 10}%`,
             }}
           />
         ))}
       </div>
 
-      {/* 🔵 左半部：藍方斜切立體艙 */}
+      {/* 🔵 左半部藍方斜切立體艙 */}
       <div 
         className="absolute left-0 top-0 h-full w-[53vw] bg-[#020617] z-10 shadow-[0_0_50px_rgba(37,99,235,0.4)]"
         style={{ clipPath: 'polygon(0 0, 100% 0, 85% 100%, 0 100%)' }}
@@ -130,21 +141,19 @@ export default function StageScreenPage() {
           className="absolute inset-0 bg-gradient-to-br from-[#050f29] via-[#020617] to-[#01020a]"
           style={{ clipPath: 'polygon(0 0, calc(100% - 4px) 0, calc(85% - 4px) 100%, 0 100%)' }}
         >
-          {/* ☁️ 專屬藍色空間的真實雲朵 */}
+          {/* 專屬藍色動態雲霧 */}
           <div className="absolute inset-0 overflow-hidden z-0 pointer-events-none">
-            {/* 前景雲：比較清楚、移動較快 */}
             <motion.div
-              animate={{ x: [-50, 50, -50], y: [-20, 20, -20], scale: [1, 1.15, 1], opacity: [0.2, 0.5, 0.2] }}
-              transition={{ duration: 18, repeat: Infinity, ease: 'easeInOut' }}
-              className="absolute top-[-10%] left-[-10%] w-[1200px] h-[1200px] mix-blend-screen"
-              style={{ backgroundImage: "url('/cloud.png')", backgroundSize: 'contain', backgroundRepeat: 'no-repeat', backgroundPosition: 'center', filter: 'blur(5px)' }}
+              animate={{ x: [-80, 80, -80], y: [-50, 50, -50], scale: [1, 1.3, 1], opacity: [0.6, 1, 0.6] }}
+              transition={{ duration: 15, repeat: Infinity, ease: 'easeInOut' }}
+              className="absolute top-[10%] left-[10%] w-[1000px] h-[1000px] rounded-full mix-blend-screen"
+              style={{ background: 'radial-gradient(circle, rgba(37,99,235,0.5) 0%, rgba(0,0,0,0) 65%)', filter: 'blur(100px)' }}
             />
-            {/* 後景雲：比較模糊、移動緩慢 */}
             <motion.div
-              animate={{ x: [60, -60, 60], y: [30, -30, 30], scale: [1.2, 0.9, 1.2], opacity: [0.1, 0.3, 0.1] }}
-              transition={{ duration: 25, repeat: Infinity, ease: 'easeInOut' }}
-              className="absolute bottom-[-10%] right-[0%] w-[1000px] h-[1000px] mix-blend-screen"
-              style={{ backgroundImage: "url('/cloud.png')", backgroundSize: 'contain', backgroundRepeat: 'no-repeat', backgroundPosition: 'center', filter: 'blur(10px)' }}
+              animate={{ x: [80, -80, 80], y: [50, -50, 50], scale: [1.2, 0.9, 1.2], opacity: [0.4, 0.8, 0.4] }}
+              transition={{ duration: 18, repeat: Infinity, ease: 'easeInOut' }}
+              className="absolute bottom-[0%] right-[10%] w-[800px] h-[800px] rounded-full mix-blend-screen"
+              style={{ background: 'radial-gradient(circle, rgba(59,130,246,0.4) 0%, rgba(0,0,0,0) 65%)', filter: 'blur(120px)' }}
             />
           </div>
 
@@ -181,21 +190,19 @@ export default function StageScreenPage() {
           className="absolute inset-0 bg-gradient-to-bl from-[#2e0509] via-[#0f0103] to-[#080102]"
           style={{ clipPath: 'polygon(calc(15% + 4px) 0, 100% 0, 100% 100%, 4px 100%)' }}
         >
-          {/* ☁️ 專屬紅色空間的真實雲朵 */}
+          {/* 專屬紅色動態雲霧 */}
           <div className="absolute inset-0 overflow-hidden z-0 pointer-events-none">
-            {/* 前景雲 */}
             <motion.div
-              animate={{ x: [50, -50, 50], y: [20, -20, 20], scale: [1, 1.15, 1], opacity: [0.2, 0.5, 0.2] }}
-              transition={{ duration: 19, repeat: Infinity, ease: 'easeInOut' }}
-              className="absolute top-[-5%] right-[-10%] w-[1200px] h-[1200px] mix-blend-screen"
-              style={{ backgroundImage: "url('/cloud.png')", backgroundSize: 'contain', backgroundRepeat: 'no-repeat', backgroundPosition: 'center', filter: 'blur(5px)' }}
+              animate={{ x: [80, -80, 80], y: [50, -50, 50], scale: [1, 1.3, 1], opacity: [0.6, 1, 0.6] }}
+              transition={{ duration: 16, repeat: Infinity, ease: 'easeInOut' }}
+              className="absolute top-[10%] right-[10%] w-[1000px] h-[1000px] rounded-full mix-blend-screen"
+              style={{ background: 'radial-gradient(circle, rgba(220,38,38,0.4) 0%, rgba(0,0,0,0) 65%)', filter: 'blur(100px)' }}
             />
-            {/* 後景雲 */}
             <motion.div
-              animate={{ x: [-60, 60, -60], y: [-30, 30, -30], scale: [1.2, 0.9, 1.2], opacity: [0.1, 0.3, 0.1] }}
-              transition={{ duration: 24, repeat: Infinity, ease: 'easeInOut' }}
-              className="absolute bottom-[-10%] left-[0%] w-[1000px] h-[1000px] mix-blend-screen"
-              style={{ backgroundImage: "url('/cloud.png')", backgroundSize: 'contain', backgroundRepeat: 'no-repeat', backgroundPosition: 'center', filter: 'blur(10px)' }}
+              animate={{ x: [-80, 80, -80], y: [-50, 50, -50], scale: [1.2, 0.9, 1.2], opacity: [0.4, 0.8, 0.4] }}
+              transition={{ duration: 19, repeat: Infinity, ease: 'easeInOut' }}
+              className="absolute bottom-[0%] left-[10%] w-[800px] h-[800px] rounded-full mix-blend-screen"
+              style={{ background: 'radial-gradient(circle, rgba(239,68,68,0.3) 0%, rgba(0,0,0,0) 65%)', filter: 'blur(120px)' }}
             />
           </div>
 
@@ -233,7 +240,7 @@ export default function StageScreenPage() {
         <div className="absolute left-0 top-0 h-full w-full bg-[#ff003c]" style={{ clipPath: 'polygon(15% 0, calc(15% + 4px) 0, 4px 100%, 0 100%)' }}></div>
       </div>
 
-      {/* 頂層標題 */}
+      {/* 💡 修正 3：頂層標題修改為 LIVE VOTE 與 賽事名稱，並置中 */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 z-40 bg-zinc-950 px-16 py-4 rounded-b-3xl border-b-2 border-x-2 border-zinc-800 shadow-[0_10px_30px_rgba(0,0,0,0.8)] flex flex-col items-center justify-center">
         <h1 className="text-3xl font-black text-white tracking-[0.3em] uppercase drop-shadow-md">LIVE VOTE</h1>
         {match.tournament_name && (
@@ -241,7 +248,7 @@ export default function StageScreenPage() {
         )}
       </div>
 
-      {/* VS 金色外圈 */}
+      {/* 💡 修正 2：VS 改為金色外圈 */}
       <div className="absolute left-1/2 top-[45%] -translate-x-1/2 -translate-y-1/2 z-40">
         <div className="rounded-full p-[4px] bg-gradient-to-br from-yellow-300 via-yellow-500 to-yellow-700 shadow-[0_0_40px_rgba(234,179,8,0.6)]">
           <div className="bg-black text-white italic font-black text-6xl rounded-full w-28 h-28 flex items-center justify-center">
