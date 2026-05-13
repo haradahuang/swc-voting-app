@@ -4,18 +4,18 @@ import { supabase } from '@/lib/supabase';
 import { motion, AnimatePresence } from 'framer-motion';
 import QRCode from 'react-qr-code';
 
-// 💡 強化版星雲動態：亮度更高、移動範圍更大，在中央裂縫中完美呈現
+// 💡 動態雲霧的位移路徑 (強化亮度與動態)
 const nebulaVariants = {
   animate: (i: number) => ({
     x: [i % 2 === 0 ? -100 : 100, i % 2 === 0 ? 100 : -100],
     y: [i < 2 ? -50 : 50, i < 2 ? 50 : -50],
     scale: [1, 1.4, 0.8, 1],
-    opacity: [0.6, 1, 0.6],
+    opacity: [0.6, 1, 0.6], // 提高透明度確保可見
     transition: {
       duration: 15 + i * 3,
       repeat: Infinity,
       repeatType: 'reverse' as const,
-      ease: 'easeInOut',
+      ease: 'linear',
     },
   }),
 };
@@ -93,7 +93,6 @@ export default function StageScreenPage() {
   const [p1Int, p1Dec] = p1Rate.toFixed(1).split('.');
   const [p2Int, p2Dec] = p2Rate.toFixed(1).split('.');
 
-  // 名字長度動態縮放
   const maxNameLen = Math.max(match.p1_name?.length || 0, match.p2_name?.length || 0);
   let nameTextClass = "text-[65px] mb-2";
   if (maxNameLen >= 8) nameTextClass = "text-[40px] mb-4";
@@ -113,7 +112,7 @@ export default function StageScreenPage() {
   return (
     <div className="h-[100dvh] w-screen bg-black flex overflow-hidden font-sans select-none relative">
       
-      {/* ================= 🌌 最深層：動態星雲背景 (從中央縫隙透出) ================= */}
+      {/* ================= 🌌 修正 1：最深層層次化深色雲霧背景 (從中央透出) ================= */}
       <div className="absolute inset-0 z-0 overflow-hidden bg-[#020205]">
         {[0, 1, 2, 3].map((i) => (
           <motion.div
@@ -123,8 +122,10 @@ export default function StageScreenPage() {
             animate="animate"
             className="absolute w-[900px] h-[900px] rounded-full mix-blend-screen"
             style={{
-              background: i % 2 === 0 ? 'rgba(37,99,235,0.6)' : 'rgba(220,38,38,0.5)',
-              filter: 'blur(150px)',
+              background: i % 2 === 0 
+                ? 'radial-gradient(circle, rgba(37,99,235,0.7) 0%, rgba(0,0,0,0) 70%)' // 強化藍色星雲
+                : 'radial-gradient(circle, rgba(220,38,38,0.6) 0%, rgba(0,0,0,0) 70%)', // 強化紅色星雲
+              filter: 'blur(150px)', // 強制套用模糊保證生效
               left: `${(i % 2) * 50 - 10}%`,
               top: `${Math.floor(i / 2) * 50 - 10}%`,
             }}
@@ -134,20 +135,20 @@ export default function StageScreenPage() {
 
       {/* ================= 🔵 左半部：藍方斜切立體艙 ================= */}
       <div 
-        className="absolute left-0 top-0 h-full w-[53vw] bg-blue-500 z-10 shadow-[0_0_50px_rgba(37,99,235,0.4)]"
+        className="absolute left-0 top-0 h-full w-[53vw] bg-blue-600 z-10 shadow-[0_0_50px_rgba(37,99,235,0.4)]"
         style={{ clipPath: 'polygon(0 0, 100% 0, 85% 100%, 0 100%)' }} // 畫出梯形霓虹外框
       >
-        {/* 深色內層 (製造邊框發光效果) */}
+        {/* 深色內層 (製造邊框霓虹發光效果) */}
         <div 
           className="absolute inset-0 bg-gradient-to-br from-[#050f29] via-[#020617] to-[#01020a]"
           style={{ clipPath: 'polygon(0 0, calc(100% - 4px) 0, calc(85% - 4px) 100%, 0 100%)' }}
         >
-          {/* 背景巨型隱水印數字 */}
+          {/* 💡 修正 2：背景巨型隱水印數字，增加深度 */}
           <div className="absolute right-[15%] top-[15%] text-[300px] font-black italic text-blue-500/10 leading-none pointer-events-none select-none">
             {p1Int}
           </div>
 
-          {/* 選手半身照 */}
+          {/* 選手半身照 (居中偏上，整合霓虹框) */}
           <div className="absolute inset-0 flex items-center justify-center pt-10">
             {match.p1_avatar && (
               <img 
@@ -159,14 +160,15 @@ export default function StageScreenPage() {
             )}
           </div>
 
-          {/* 💡 半身照融合漸層 (完美將切平的下半身融入地板) */}
+          {/* 💡 半身照融合漸層 (完美融入陰影) */}
           <div className="absolute bottom-0 left-0 w-full h-[25vh] bg-gradient-to-t from-[#01020a] via-[#01020a]/80 to-transparent z-20"></div>
 
-          {/* 資訊看板 */}
+          {/* 💡 修正 2：資訊看板 (移動到下方，整合資訊呈現) */}
           <div className="absolute bottom-16 w-full flex flex-col items-center pr-[10%] z-30">
             <h2 className={`${nameTextClass} font-black text-white italic tracking-widest drop-shadow-[0_5px_15px_rgba(0,0,0,1)]`}>{match.p1_name}</h2>
             <div className="flex items-baseline gap-6 bg-blue-950/40 px-10 py-3 rounded-3xl border border-blue-500/20 backdrop-blur-md shadow-[0_10px_30px_rgba(0,0,0,0.5)]">
               <div className="text-4xl font-bold text-blue-400 tracking-widest"><motion.span key={`v1-${match.p1_votes}`} initial={{ scale: 2 }} animate={{ scale: 1 }} className="inline-block origin-bottom">{match.p1_votes}</motion.span> <span className="text-xl opacity-70">VOTES</span></div>
+              {/* 💡 修正 2：得獎率百分比，顯著顯示在下方看板，文字並套用柔和光暈效果 */}
               <div className="text-white tracking-tighter drop-shadow-[0_0_15px_rgba(37,99,235,0.8)]">
                 <span className="text-[60px] font-black">{p1Int}</span><span className="text-[25px] font-black">.{p1Dec}%</span>
               </div>
@@ -180,17 +182,17 @@ export default function StageScreenPage() {
         className="absolute right-0 top-0 h-full w-[53vw] bg-red-600 z-10 shadow-[0_0_50px_rgba(220,38,38,0.4)]"
         style={{ clipPath: 'polygon(15% 0, 100% 0, 100% 100%, 0 100%)' }} // 畫出梯形霓虹外框
       >
-        {/* 深色內層 */}
+        {/* 深色內層 (製造邊框霓虹發光效果) */}
         <div 
           className="absolute inset-0 bg-gradient-to-bl from-[#2e0509] via-[#0f0103] to-[#080102]"
           style={{ clipPath: 'polygon(calc(15% + 4px) 0, 100% 0, 100% 100%, 4px 100%)' }}
         >
-          {/* 背景巨型隱水印數字 */}
+          {/* 💡 修正 2：背景巨型隱水印數字，增加深度 */}
           <div className="absolute left-[15%] top-[15%] text-[300px] font-black italic text-red-500/10 leading-none pointer-events-none select-none">
             {p2Int}
           </div>
 
-          {/* 選手半身照 */}
+          {/* 選手半身照 (居中偏上，整合霓虹框) */}
           <div className="absolute inset-0 flex items-center justify-center pt-10">
             {match.p2_avatar && (
               <img 
@@ -202,14 +204,15 @@ export default function StageScreenPage() {
             )}
           </div>
 
-          {/* 💡 半身照融合漸層 */}
+          {/* 💡 半身照融合漸層 (完美融入陰影) */}
           <div className="absolute bottom-0 left-0 w-full h-[25vh] bg-gradient-to-t from-[#080102] via-[#080102]/80 to-transparent z-20"></div>
 
-          {/* 資訊看板 */}
+          {/* 💡 修正 2：資訊看板 (移動到下方，整合資訊呈現) */}
           <div className="absolute bottom-16 w-full flex flex-col items-center pl-[10%] z-30">
             <h2 className={`${nameTextClass} font-black text-white italic tracking-widest drop-shadow-[0_5px_15px_rgba(0,0,0,1)]`}>{match.p2_name}</h2>
             <div className="flex items-baseline gap-6 bg-red-950/40 px-10 py-3 rounded-3xl border border-red-500/20 backdrop-blur-md shadow-[0_10px_30px_rgba(0,0,0,0.5)] flex-row-reverse">
               <div className="text-4xl font-bold text-red-400 tracking-widest"><motion.span key={`v2-${match.p2_votes}`} initial={{ scale: 2 }} animate={{ scale: 1 }} className="inline-block origin-bottom">{match.p2_votes}</motion.span> <span className="text-xl opacity-70">VOTES</span></div>
+              {/* 💡 修正 2：得獎率百分比，顯著顯示在下方看板，文字並套用柔和光暈效果 */}
               <div className="text-white tracking-tighter drop-shadow-[0_0_15px_rgba(220,38,38,0.8)]">
                 <span className="text-[60px] font-black">{p2Int}</span><span className="text-[25px] font-black">.{p2Dec}%</span>
               </div>
@@ -218,38 +221,38 @@ export default function StageScreenPage() {
         </div>
       </div>
 
-      {/* ================= ⚔️ 畫面頂層 UI ================= */}
+      {/* ================= ⚔️ 畫面頂層 UI與專業活動品牌 ================= */}
       
       {/* 頂部賽事標籤 */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 z-40 bg-zinc-950 px-12 py-3 rounded-b-2xl border-b-2 border-x-2 border-zinc-800 shadow-[0_10px_30px_rgba(0,0,0,0.8)]">
         <h1 className="text-sm font-bold text-zinc-300 tracking-[0.5em] uppercase">Predicted Exit Poll</h1>
       </div>
 
-      {/* VS 標誌 (懸浮於斜切縫隙之上) */}
+      {/* VS 標誌 (保留在中間懸浮，位於斜切縫隙之上) */}
       <div className="absolute left-1/2 top-[45%] -translate-x-1/2 -translate-y-1/2 z-40">
         <div className="bg-black text-white italic font-black text-6xl rounded-full w-28 h-28 flex items-center justify-center border-4 border-zinc-700 shadow-[0_0_60px_rgba(0,0,0,1)]">VS</div>
       </div>
 
-      {/* QR Code */}
+      {/* QR Code (固定在右下角) */}
       {!match.show_lottery && originUrl && (
         <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 1 }} className="absolute bottom-12 right-12 z-40 bg-black/90 backdrop-blur-xl p-5 rounded-3xl border border-red-900/60 shadow-[0_0_50px_rgba(0,0,0,0.9)] flex flex-col items-center">
           <div className="flex items-center gap-2 mb-4"><div className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse"></div><h3 className="text-white font-bold text-xs tracking-[0.2em] uppercase">Scan To Vote</h3></div>
-          <div className="bg-white p-2.5 rounded-2xl"><QRCode value={originUrl} size={110} level="H" /></div>
+          <div className="bg-white p-2.5 rounded-2xl shadow-inner"><QRCode value={originUrl} size={110} level="H" /></div>
         </motion.div>
       )}
 
-      {/* ================= 🏆 抽獎揭曉全畫面 ================= */}
+      {/* ================= 🏆 抽獎揭曉全畫面 (保持AC結合邏輯) ================= */}
       <AnimatePresence>
         {match.show_lottery && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 z-50 bg-black/85 backdrop-blur-lg flex flex-col items-center justify-center font-sans overflow-hidden">
             <motion.div initial={{ scale: 0.9, opacity: 0, y: 30 }} animate={{ scale: 1, opacity: 1, y: 0 }} transition={{ type: "spring", bounce: 0.4 }} className="bg-gradient-to-b from-[#111] to-black border border-yellow-500/30 p-12 rounded-[2rem] shadow-[0_0_100px_rgba(250,204,21,0.2)] relative flex flex-col items-center min-w-[850px]">
               
-              <h2 className="text-yellow-400 text-6xl font-black italic tracking-[0.3em] uppercase mb-12 drop-shadow-[0_0_20px_rgba(250,204,21,0.6)]">WINNERS</h2>
+              <h2 className="text-yellow-400 text-6xl font-black italic tracking-[0.3em] uppercase mb-12 drop-shadow-[0_0_20px_rgba(255,255,255,0.6)]">WINNERS</h2>
               
               <div className="w-full relative h-[500px]">
                 {isSpinning ? (
                    <div className="absolute inset-0 w-full flex flex-col items-center justify-start gap-6">
-                     {spinningNames.slice(0, 3).map((name, i) => (
+                     {fakeNames.slice(0, 3).map((name, i) => (
                        <div key={i} className="bg-zinc-900/50 border border-zinc-700 w-full rounded-2xl py-6 px-10 text-center animate-pulse">
                          <span className="text-6xl font-black text-zinc-400 tracking-widest blur-[1px]">{name}</span>
                        </div>
@@ -257,7 +260,7 @@ export default function StageScreenPage() {
                    </div>
                 ) : (
                    <AnimatePresence mode="wait">
-                     <motion.div key={lotteryPage} initial={{ opacity: 0, x: 50 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -50 }} transition={{ duration: 0.3 }} className="absolute inset-0 w-full flex flex-col items-center justify-start gap-6">
+                     <motion.div key={lotteryPage} initial={{ opacity: 0, x: 50 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -50 }} transition={{ duration: 0.3 }} className="absolute inset-0 w-full flex flex-col items-center justify-start gap-6 overflow-hidden">
                        {currentWinners.slice(0, 3).map((w: any, idx: number) => (
                          <div key={idx} className="bg-gradient-to-r from-yellow-900/30 via-yellow-600/20 to-yellow-900/30 border border-yellow-500/40 w-full rounded-2xl py-6 px-10 flex flex-col items-center justify-center relative overflow-hidden shadow-lg">
                            <div className="absolute inset-0 bg-yellow-400/5 animate-pulse mix-blend-overlay"></div>
