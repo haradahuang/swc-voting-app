@@ -105,29 +105,32 @@ export default function StageScreenPage() {
       >
         <div 
           className="absolute inset-0"
-          // 💡 強制寫入的藍紫色漸層底
           style={{ 
             background: 'linear-gradient(135deg, #0c246b 0%, #040d2b 50%, #01020a 100%)',
             clipPath: 'polygon(0 0, calc(100% - 4px) 0, calc(85% - 4px) 100%, 0 100%)' 
           }}
         >
-          {/* 💡 強制渲染：多層次霓虹光球 (深海藍 + 紫色) */}
+          {/* 💡 強制渲染：多層次霓虹光球 (深海藍 + 紫色)，速度拉慢 */}
           <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
-            <motion.div animate={{ opacity: [0.5, 0.9, 0.5], scale: [1, 1.1, 1] }} transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }}
+            {/* 深海藍主光暈 - 微微呼吸 (duration: 8 -> 20) */}
+            <motion.div animate={{ opacity: [0.5, 0.9, 0.5], scale: [1, 1.05, 1] }} transition={{ duration: 20, repeat: Infinity, ease: 'easeInOut' }} // 💡 速度變慢，動作幅度縮小
               className="absolute top-[10%] left-[5%] w-[1000px] h-[1000px] mix-blend-screen"
               style={{ background: 'radial-gradient(circle, rgba(37,99,235,0.7) 0%, rgba(0,0,0,0) 70%)' }} />
             
-            <motion.div animate={{ opacity: [0.4, 0.8, 0.4], scale: [1, 1.2, 1] }} transition={{ duration: 11, repeat: Infinity, ease: 'easeInOut' }}
+            {/* 紫色點綴光暈 (超高亮度) - 微微呼吸 (duration: 11 -> 25) */}
+            <motion.div animate={{ opacity: [0.4, 0.8, 0.4], scale: [1, 1.1, 1] }} transition={{ duration: 25, repeat: Infinity, ease: 'easeInOut' }} // 💡 速度變慢，動作幅度縮小
               className="absolute bottom-[10%] left-[20%] w-[800px] h-[800px] mix-blend-screen"
               style={{ background: 'radial-gradient(circle, rgba(168,85,247,0.6) 0%, rgba(0,0,0,0) 70%)' }} />
           </div>
 
-          {/* ☁️ 真實雲朵層 */}
+          {/* ☁️ 真實雲朵層 - 微微動，速度拉慢 */}
           <div className="absolute inset-0 overflow-hidden z-0 pointer-events-none" style={{ WebkitMaskImage: 'radial-gradient(ellipse 80% 80% at 40% 50%, rgba(0,0,0,1) 30%, rgba(0,0,0,0) 100%)' }}>
-            <motion.div animate={{ x: [-50, 50, -50], y: [-20, 20, -20], scale: [1, 1.15, 1], opacity: [0.3, 0.5, 0.3] }} transition={{ duration: 18, repeat: Infinity, ease: 'easeInOut' }}
+            {/* 前景雲 - 微微動 ( duration: 18 -> 40, x: [-50, 50] -> [-20, 20], y: [-20, 20] -> [-10, 10], scale: 1.15 -> 1.05 ) */}
+            <motion.div animate={{ x: [-20, 20, -20], y: [-10, 10, -10], scale: [1, 1.05, 1], opacity: [0.3, 0.5, 0.3] }} transition={{ duration: 40, repeat: Infinity, ease: 'easeInOut' }} // 💡 微微動，速度慢
               className="absolute top-[-10%] left-[-10%] w-[1200px] h-[1200px] mix-blend-screen"
               style={{ backgroundImage: "url('/cloud-left.png')", backgroundSize: 'contain', backgroundRepeat: 'no-repeat', backgroundPosition: 'center', filter: 'blur(5px)' }} />
-            <motion.div animate={{ x: [60, -60, 60], y: [30, -30, 30], scale: [1.2, 0.9, 1.2], opacity: [0.2, 0.4, 0.2] }} transition={{ duration: 25, repeat: Infinity, ease: 'easeInOut' }}
+            {/* 後景雲 - 微微動 ( duration: 25 -> 50, x: [60, -60] -> [30, -30], y: [30, -30] -> [15, -15], scale: 1.2 -> 1.1 ) */}
+            <motion.div animate={{ x: [30, -30, 30], y: [15, -15, 15], scale: [1.1, 0.95, 1.1], opacity: [0.2, 0.4, 0.2] }} transition={{ duration: 50, repeat: Infinity, ease: 'easeInOut' }} // 💡 微微動，速度慢
               className="absolute bottom-[-10%] right-[0%] w-[1000px] h-[1000px] mix-blend-screen"
               style={{ backgroundImage: "url('/cloud-left.png')", backgroundSize: 'contain', backgroundRepeat: 'no-repeat', backgroundPosition: 'center', filter: 'blur(10px)' }} />
           </div>
@@ -164,33 +167,37 @@ export default function StageScreenPage() {
       >
         <div 
           className="absolute inset-0"
-          // 💡 強制寫入的暗紅漸層底
           style={{ 
             background: 'linear-gradient(225deg, #6b0c15 0%, #1a0105 50%, #050002 100%)',
             clipPath: 'polygon(calc(15% + 4px) 0, 100% 0, 100% 100%, 4px 100%)' 
           }}
         >
-          {/* 💡 強制渲染：多層次霓虹光球 (赤焰紅 + 紫色 + 黃色) */}
+          {/* 💡 強制渲染：多層次霓虹光球 (赤焰紅 + 紫色 + 黃色)，速度拉慢 */}
           <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
-            <motion.div animate={{ opacity: [0.6, 0.9, 0.6], scale: [1, 1.1, 1] }} transition={{ duration: 9, repeat: Infinity, ease: 'easeInOut' }}
+            {/* 赤焰紅主光暈 - 微微呼吸 (duration: 9 -> 22) */}
+            <motion.div animate={{ opacity: [0.6, 0.9, 0.6], scale: [1, 1.05, 1] }} transition={{ duration: 22, repeat: Infinity, ease: 'easeInOut' }} // 💡 速度變慢，動作幅度縮小
               className="absolute top-[10%] right-[10%] w-[1000px] h-[1000px] mix-blend-screen"
               style={{ background: 'radial-gradient(circle, rgba(220,38,38,0.6) 0%, rgba(0,0,0,0) 70%)' }} />
             
-            <motion.div animate={{ opacity: [0.4, 0.8, 0.4], scale: [1, 1.2, 1] }} transition={{ duration: 12, repeat: Infinity, ease: 'easeInOut' }}
+            {/* 紫色點綴光暈 (超高亮度) - 微微呼吸 (duration: 12 -> 26) */}
+            <motion.div animate={{ opacity: [0.5, 0.8, 0.5], scale: [1, 1.1, 1] }} transition={{ duration: 26, repeat: Infinity, ease: 'easeInOut' }} // 💡 速度變慢，動作幅度縮小
               className="absolute top-[30%] right-[30%] w-[700px] h-[700px] mix-blend-screen"
               style={{ background: 'radial-gradient(circle, rgba(168,85,247,0.5) 0%, rgba(0,0,0,0) 70%)' }} />
               
-            <motion.div animate={{ opacity: [0.3, 0.7, 0.3], scale: [1, 1.15, 1] }} transition={{ duration: 7, repeat: Infinity, ease: 'easeInOut' }}
+            {/* 黃色點綴光暈 (超高亮度) - 微微呼吸 (duration: 7 -> 18) */}
+            <motion.div animate={{ opacity: [0.4, 0.7, 0.4], scale: [1, 1.05, 1] }} transition={{ duration: 18, repeat: Infinity, ease: 'easeInOut' }} // 💡 速度變慢，動作幅度縮小
               className="absolute bottom-[10%] right-[20%] w-[800px] h-[800px] mix-blend-screen"
               style={{ background: 'radial-gradient(circle, rgba(234,179,8,0.5) 0%, rgba(0,0,0,0) 70%)' }} />
           </div>
 
-          {/* ☁️ 真實雲朵層 */}
+          {/* ☁️ 真實雲朵層 - 微微動，速度拉慢 */}
           <div className="absolute inset-0 overflow-hidden z-0 pointer-events-none" style={{ WebkitMaskImage: 'radial-gradient(ellipse 80% 80% at 60% 50%, rgba(0,0,0,1) 30%, rgba(0,0,0,0) 100%)' }}>
-            <motion.div animate={{ x: [50, -50, 50], y: [20, -20, 20], scale: [1, 1.15, 1], opacity: [0.3, 0.5, 0.3] }} transition={{ duration: 19, repeat: Infinity, ease: 'easeInOut' }}
+            {/* 前景雲 - 微微動 ( duration: 19 -> 42, x: [50, -50] -> [20, -20], y: [20, -20] -> [10, -10], scale: 1.15 -> 1.05 ) */}
+            <motion.div animate={{ x: [20, -20, 20], y: [10, -10, 10], scale: [1, 1.05, 1], opacity: [0.3, 0.5, 0.3] }} transition={{ duration: 42, repeat: Infinity, ease: 'easeInOut' }} // 💡 微微動，速度慢
               className="absolute top-[-5%] right-[-10%] w-[1200px] h-[1200px] mix-blend-screen"
               style={{ backgroundImage: "url('/cloud-right.png')", backgroundSize: 'contain', backgroundRepeat: 'no-repeat', backgroundPosition: 'center', filter: 'blur(5px)' }} />
-            <motion.div animate={{ x: [-60, 60, -60], y: [-30, 30, -30], scale: [1.2, 0.9, 1.2], opacity: [0.2, 0.4, 0.2] }} transition={{ duration: 24, repeat: Infinity, ease: 'easeInOut' }}
+            {/* 後景雲 - 微微動 ( duration: 24 -> 48, x: [-60, 60] -> [-30, 30], y: [-30, 30] -> [-15, 15], scale: 1.2 -> 1.1 ) */}
+            <motion.div animate={{ x: [-30, 30, -30], y: [-15, 15, -15], scale: [1.1, 0.95, 1.1], opacity: [0.2, 0.4, 0.2] }} transition={{ duration: 48, repeat: Infinity, ease: 'easeInOut' }} // 💡 微微動，速度慢
               className="absolute bottom-[-10%] left-[0%] w-[1000px] h-[1000px] mix-blend-screen"
               style={{ backgroundImage: "url('/cloud-right.png')", backgroundSize: 'contain', backgroundRepeat: 'no-repeat', backgroundPosition: 'center', filter: 'blur(10px)' }} />
           </div>
