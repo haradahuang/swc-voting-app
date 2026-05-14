@@ -95,33 +95,10 @@ export default function StageScreenPage() {
   return (
     <div className="h-[100dvh] w-screen bg-black flex overflow-hidden font-sans select-none relative">
       
-      {/* 🌌 最深層：中央底部的真實雲霧 */}
-      <div className="absolute inset-0 z-0 overflow-hidden bg-[#020205]">
-        {[0, 1].map((i) => (
-          <motion.div
-            key={i}
-            animate={{
-              x: [i % 2 === 0 ? -80 : 80, i % 2 === 0 ? 80 : -80],
-              y: [i < 1 ? -30 : 30, i < 1 ? 30 : -30],
-              scale: [1, 1.2, 1],
-              opacity: [0.15, 0.3, 0.15],
-            }}
-            transition={{ duration: 25 + i * 5, repeat: Infinity, ease: 'easeInOut' }}
-            className="absolute w-[1500px] h-[1500px] mix-blend-screen pointer-events-none"
-            style={{
-              backgroundImage: "url('/cloud.png')",
-              backgroundSize: 'contain',
-              backgroundRepeat: 'no-repeat',
-              backgroundPosition: 'center',
-              left: `${(i % 2) * 40 - 20}%`,
-              top: `${i * 30 - 10}%`,
-              filter: 'blur(15px)', // 最深層雲朵比較模糊
-            }}
-          />
-        ))}
-      </div>
+      {/* 🌌 最深層：保持微弱底色防止純黑 */}
+      <div className="absolute inset-0 z-0 bg-gradient-to-b from-[#020205] to-[#000]"></div>
 
-      {/* 🔵 左半部：藍方斜切立體艙 */}
+      {/* ================= 🔵 左半部：藍方斜切立體艙 ================= */}
       <div 
         className="absolute left-0 top-0 h-full w-[53vw] bg-[#020617] z-10 shadow-[0_0_50px_rgba(37,99,235,0.4)]"
         style={{ clipPath: 'polygon(0 0, 100% 0, 85% 100%, 0 100%)' }}
@@ -130,21 +107,21 @@ export default function StageScreenPage() {
           className="absolute inset-0 bg-gradient-to-br from-[#050f29] via-[#020617] to-[#01020a]"
           style={{ clipPath: 'polygon(0 0, calc(100% - 4px) 0, calc(85% - 4px) 100%, 0 100%)' }}
         >
-          {/* ☁️ 專屬藍色空間的真實雲朵 */}
+          {/* ☁️ 💡 修正 1 & 2：擴大範圍、分散位置的藍色空間真實雲朵 */}
           <div className="absolute inset-0 overflow-hidden z-0 pointer-events-none">
-            {/* 前景雲：比較清楚、移動較快 */}
+            {/* 深層廣域雲 (偏左上，極大，較模糊) */}
             <motion.div
-              animate={{ x: [-50, 50, -50], y: [-20, 20, -20], scale: [1, 1.15, 1], opacity: [0.2, 0.5, 0.2] }}
-              transition={{ duration: 18, repeat: Infinity, ease: 'easeInOut' }}
-              className="absolute top-[-10%] left-[-10%] w-[1200px] h-[1200px] mix-blend-screen"
-              style={{ backgroundImage: "url('/cloud.png')", backgroundSize: 'contain', backgroundRepeat: 'no-repeat', backgroundPosition: 'center', filter: 'blur(5px)' }}
-            />
-            {/* 後景雲：比較模糊、移動緩慢 */}
-            <motion.div
-              animate={{ x: [60, -60, 60], y: [30, -30, 30], scale: [1.2, 0.9, 1.2], opacity: [0.1, 0.3, 0.1] }}
+              animate={{ x: [-40, 40, -40], y: [-20, 20, -20], opacity: [0.15, 0.3, 0.15] }}
               transition={{ duration: 25, repeat: Infinity, ease: 'easeInOut' }}
-              className="absolute bottom-[-10%] right-[0%] w-[1000px] h-[1000px] mix-blend-screen"
-              style={{ backgroundImage: "url('/cloud.png')", backgroundSize: 'contain', backgroundRepeat: 'no-repeat', backgroundPosition: 'center', filter: 'blur(10px)' }}
+              className="absolute -top-[20%] -left-[20%] w-[150%] h-[140%] mix-blend-screen"
+              style={{ backgroundImage: "url('/cloud-left.png')", backgroundSize: 'cover', backgroundPosition: 'top left', filter: 'blur(12px)' }}
+            />
+            {/* 淺層前景雲 (偏右下，移動稍快，較清晰) */}
+            <motion.div
+              animate={{ x: [30, -30, 30], y: [15, -15, 15], opacity: [0.25, 0.45, 0.25] }}
+              transition={{ duration: 18, repeat: Infinity, ease: 'easeInOut' }}
+              className="absolute bottom-[-10%] right-[0%] w-[120%] h-[100%] mix-blend-screen"
+              style={{ backgroundImage: "url('/cloud-left.png')", backgroundSize: 'cover', backgroundPosition: 'bottom right', filter: 'blur(6px)' }}
             />
           </div>
 
@@ -181,21 +158,21 @@ export default function StageScreenPage() {
           className="absolute inset-0 bg-gradient-to-bl from-[#2e0509] via-[#0f0103] to-[#080102]"
           style={{ clipPath: 'polygon(calc(15% + 4px) 0, 100% 0, 100% 100%, 4px 100%)' }}
         >
-          {/* ☁️ 專屬紅色空間的真實雲朵 */}
+          {/* ☁️ 💡 修正 1 & 2：強制定向翻轉、分散位置的紅色空間真實雲朵 */}
           <div className="absolute inset-0 overflow-hidden z-0 pointer-events-none">
-            {/* 前景雲 */}
+            {/* 深層廣域雲 (偏右側，極大，水平翻轉 scaleX: -1 保證與左邊不同) */}
             <motion.div
-              animate={{ x: [50, -50, 50], y: [20, -20, 20], scale: [1, 1.15, 1], opacity: [0.2, 0.5, 0.2] }}
-              transition={{ duration: 19, repeat: Infinity, ease: 'easeInOut' }}
-              className="absolute top-[-5%] right-[-10%] w-[1200px] h-[1200px] mix-blend-screen"
-              style={{ backgroundImage: "url('/cloud.png')", backgroundSize: 'contain', backgroundRepeat: 'no-repeat', backgroundPosition: 'center', filter: 'blur(5px)' }}
+              animate={{ x: [40, -40, 40], y: [20, -20, 20], scaleX: [-1, -1, -1], opacity: [0.15, 0.3, 0.15] }}
+              transition={{ duration: 26, repeat: Infinity, ease: 'easeInOut' }}
+              className="absolute -top-[10%] -right-[20%] w-[160%] h-[140%] mix-blend-screen"
+              style={{ backgroundImage: "url('/cloud-right.png')", backgroundSize: 'cover', backgroundPosition: 'top right', filter: 'blur(14px)' }}
             />
-            {/* 後景雲 */}
+            {/* 淺層前景雲 (偏下，垂直翻轉 scaleY: -1，增加形狀變化) */}
             <motion.div
-              animate={{ x: [-60, 60, -60], y: [-30, 30, -30], scale: [1.2, 0.9, 1.2], opacity: [0.1, 0.3, 0.1] }}
-              transition={{ duration: 24, repeat: Infinity, ease: 'easeInOut' }}
-              className="absolute bottom-[-10%] left-[0%] w-[1000px] h-[1000px] mix-blend-screen"
-              style={{ backgroundImage: "url('/cloud.png')", backgroundSize: 'contain', backgroundRepeat: 'no-repeat', backgroundPosition: 'center', filter: 'blur(10px)' }}
+              animate={{ x: [-30, 30, -30], y: [-15, 15, -15], scaleY: [-1, -1, -1], opacity: [0.2, 0.4, 0.2] }}
+              transition={{ duration: 19, repeat: Infinity, ease: 'easeInOut' }}
+              className="absolute -bottom-[15%] left-[0%] w-[130%] h-[110%] mix-blend-screen"
+              style={{ backgroundImage: "url('/cloud-right.png')", backgroundSize: 'cover', backgroundPosition: 'center', filter: 'blur(7px)' }}
             />
           </div>
 
@@ -224,8 +201,6 @@ export default function StageScreenPage() {
       </div>
 
       {/* ================= ⚔️ 畫面頂層 UI ================= */}
-      
-      {/* 螢光線條 */}
       <div className="absolute left-0 top-0 h-full w-[53vw] z-20 pointer-events-none" style={{ filter: 'drop-shadow(0 0 15px #003cff)' }}>
         <div className="absolute left-0 top-0 h-full w-full bg-[#003cff]" style={{ clipPath: 'polygon(calc(100% - 4px) 0, 100% 0, 85% 100%, calc(85% - 4px) 100%)' }}></div>
       </div>
@@ -233,7 +208,6 @@ export default function StageScreenPage() {
         <div className="absolute left-0 top-0 h-full w-full bg-[#ff003c]" style={{ clipPath: 'polygon(15% 0, calc(15% + 4px) 0, 4px 100%, 0 100%)' }}></div>
       </div>
 
-      {/* 頂層標題 */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 z-40 bg-zinc-950 px-16 py-4 rounded-b-3xl border-b-2 border-x-2 border-zinc-800 shadow-[0_10px_30px_rgba(0,0,0,0.8)] flex flex-col items-center justify-center">
         <h1 className="text-3xl font-black text-white tracking-[0.3em] uppercase drop-shadow-md">LIVE VOTE</h1>
         {match.tournament_name && (
@@ -241,7 +215,6 @@ export default function StageScreenPage() {
         )}
       </div>
 
-      {/* VS 金色外圈 */}
       <div className="absolute left-1/2 top-[45%] -translate-x-1/2 -translate-y-1/2 z-40">
         <div className="rounded-full p-[4px] bg-gradient-to-br from-yellow-300 via-yellow-500 to-yellow-700 shadow-[0_0_40px_rgba(234,179,8,0.6)]">
           <div className="bg-black text-white italic font-black text-6xl rounded-full w-28 h-28 flex items-center justify-center">
@@ -250,7 +223,6 @@ export default function StageScreenPage() {
         </div>
       </div>
 
-      {/* QR Code */}
       {!match.show_lottery && originUrl && (
         <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 1 }} className="absolute bottom-[25%] right-[3%] z-40 bg-black/90 backdrop-blur-xl p-4 rounded-3xl border border-red-900/60 shadow-[0_0_50px_rgba(0,0,0,0.9)] flex flex-col items-center">
           <div className="flex items-center gap-2 mb-3"><div className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></div><h3 className="text-white font-bold text-[11px] tracking-[0.2em] uppercase">Scan To Vote</h3></div>
