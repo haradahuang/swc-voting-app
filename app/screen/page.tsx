@@ -95,7 +95,6 @@ export default function StageScreenPage() {
   return (
     <div className="h-[100dvh] w-screen bg-black flex overflow-hidden font-sans select-none relative">
       
-      {/* 🌌 最深層：中央底部的真實雲霧 */}
       <div className="absolute inset-0 z-0 overflow-hidden bg-[#020205]">
         {[0, 1].map((i) => (
           <motion.div
@@ -123,43 +122,42 @@ export default function StageScreenPage() {
 
       {/* ================= 🔵 左半部：藍方斜切立體艙 ================= */}
       <div 
-        className="absolute left-0 top-0 h-full w-[53vw] bg-[#020617] z-10 shadow-[0_0_50px_rgba(37,99,235,0.4)]"
-        style={{ 
-          clipPath: 'polygon(0 0, 100% 0, 85% 100%, 0 100%)',
-          WebkitMaskImage: 'linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 20%, rgba(0,0,0,1) 80%, rgba(0,0,0,0) 100%)',
-          maskImage: 'linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 20%, rgba(0,0,0,1) 80%, rgba(0,0,0,0) 100%)',
-        }}
+        className="absolute left-0 top-0 h-full w-[53vw] z-10 shadow-[0_0_50px_rgba(37,99,235,0.5)]"
+        style={{ clipPath: 'polygon(0 0, 100% 0, 85% 100%, 0 100%)' }} // 💡 移除了這裡的 Mask，讓底色不再被切斷
       >
         <div 
-          className="absolute inset-0 bg-gradient-to-br from-[#050f29] via-[#020617] to-[#01020a]"
+          className="absolute inset-0 bg-gradient-to-br from-[#0c246b] via-[#040d2b] to-[#01020a]" // 💡 調亮了基礎漸層色
           style={{ clipPath: 'polygon(0 0, calc(100% - 4px) 0, calc(85% - 4px) 100%, 0 100%)' }}
         >
-          {/* ☁️ 💡 修正 1：絕對可見的實體藍色光暈與雲朵 */}
-          <div className="absolute inset-0 overflow-hidden z-0 pointer-events-none">
-            {/* 實體藍色環境光暈 (墊在雲朵下方保證發光) */}
-            <motion.div 
-              animate={{ opacity: [0.4, 0.7, 0.4], scale: [1, 1.1, 1] }} 
-              transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }}
-              className="absolute top-[20%] left-[-10%] w-[1000px] h-[1000px] bg-blue-600/40 rounded-full blur-[120px] mix-blend-screen"
-            />
-            
+          {/* 💡 實體藍色環境光暈 (墊在雲朵下方，強化透明度確保光暈明顯) */}
+          <motion.div 
+            animate={{ opacity: [0.5, 0.8, 0.5], scale: [1, 1.1, 1] }} 
+            transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }}
+            className="absolute top-[10%] left-[-5%] w-[1100px] h-[1100px] bg-blue-500/50 rounded-full blur-[150px] mix-blend-screen pointer-events-none z-0"
+          />
+
+          {/* 💡 專屬雲朵層，加上球形漸層遮罩完美羽化邊緣 */}
+          <div 
+            className="absolute inset-0 overflow-hidden z-0 pointer-events-none"
+            style={{ WebkitMaskImage: 'radial-gradient(ellipse 80% 80% at 40% 50%, rgba(0,0,0,1) 40%, rgba(0,0,0,0) 100%)' }}
+          >
             {/* 前景雲 */}
             <motion.div
-              animate={{ x: [-50, 50, -50], y: [-20, 20, -20], scale: [1, 1.15, 1], opacity: [0.15, 0.3, 0.15] }} 
+              animate={{ x: [-50, 50, -50], y: [-20, 20, -20], scale: [1, 1.15, 1], opacity: [0.2, 0.4, 0.2] }} 
               transition={{ duration: 18, repeat: Infinity, ease: 'easeInOut' }}
               className="absolute top-[-10%] left-[-10%] w-[1200px] h-[1200px] mix-blend-screen"
               style={{ backgroundImage: "url('/cloud-left.png')", backgroundSize: 'contain', backgroundRepeat: 'no-repeat', backgroundPosition: 'center', filter: 'blur(5px)' }}
             />
             {/* 後景雲 */}
             <motion.div
-              animate={{ x: [60, -60, 60], y: [30, -30, 30], scale: [1.2, 0.9, 1.2], opacity: [0.1, 0.2, 0.1] }} 
+              animate={{ x: [60, -60, 60], y: [30, -30, 30], scale: [1.2, 0.9, 1.2], opacity: [0.15, 0.25, 0.15] }} 
               transition={{ duration: 25, repeat: Infinity, ease: 'easeInOut' }}
               className="absolute bottom-[-10%] right-[0%] w-[1000px] h-[1000px] mix-blend-screen"
               style={{ backgroundImage: "url('/cloud-left.png')", backgroundSize: 'contain', backgroundRepeat: 'no-repeat', backgroundPosition: 'center', filter: 'blur(10px)' }}
             />
           </div>
 
-          <div className="absolute left-[5%] top-[8%] text-[450px] font-black italic text-blue-500/15 leading-none pointer-events-none z-0 tracking-tighter">
+          <div className="absolute left-[5%] top-[8%] text-[450px] font-black italic text-blue-400/15 leading-none pointer-events-none z-0 tracking-tighter">
             {p1Int}
           </div>
 
@@ -185,43 +183,42 @@ export default function StageScreenPage() {
 
       {/* ================= 🔴 右半部：紅方斜切立體艙 ================= */}
       <div 
-        className="absolute right-0 top-0 h-full w-[53vw] bg-[#2e0509] z-10 shadow-[0_0_50px_rgba(220,38,38,0.4)]"
-        style={{ 
-          clipPath: 'polygon(15% 0, 100% 0, 100% 100%, 0 100%)',
-          WebkitMaskImage: 'linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 20%, rgba(0,0,0,1) 80%, rgba(0,0,0,0) 100%)',
-          maskImage: 'linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 20%, rgba(0,0,0,1) 80%, rgba(0,0,0,0) 100%)',
-        }}
+        className="absolute right-0 top-0 h-full w-[53vw] z-10 shadow-[0_0_50px_rgba(220,38,38,0.5)]"
+        style={{ clipPath: 'polygon(15% 0, 100% 0, 100% 100%, 0 100%)' }} // 💡 移除了這裡的 Mask
       >
         <div 
-          className="absolute inset-0 bg-gradient-to-bl from-[#2e0509] via-[#0f0103] to-[#080102]"
+          className="absolute inset-0 bg-gradient-to-bl from-[#6b0c15] via-[#2b0407] to-[#080102]" // 💡 調亮了基礎漸層色
           style={{ clipPath: 'polygon(calc(15% + 4px) 0, 100% 0, 100% 100%, 4px 100%)' }}
         >
-          {/* ☁️ 💡 修正 1：絕對可見的實體紅色光暈與雲朵 */}
-          <div className="absolute inset-0 overflow-hidden z-0 pointer-events-none">
-            {/* 實體紅色環境光暈 (墊在雲朵下方保證發光) */}
-            <motion.div 
-              animate={{ opacity: [0.4, 0.7, 0.4], scale: [1, 1.1, 1] }} 
-              transition={{ duration: 9, repeat: Infinity, ease: 'easeInOut' }}
-              className="absolute top-[20%] right-[-10%] w-[1000px] h-[1000px] bg-red-600/40 rounded-full blur-[120px] mix-blend-screen"
-            />
+          {/* 💡 實體紅色環境光暈 (墊在雲朵下方，強化透明度確保光暈明顯) */}
+          <motion.div 
+            animate={{ opacity: [0.5, 0.8, 0.5], scale: [1, 1.1, 1] }} 
+            transition={{ duration: 9, repeat: Infinity, ease: 'easeInOut' }}
+            className="absolute top-[10%] right-[-5%] w-[1100px] h-[1100px] bg-red-500/50 rounded-full blur-[150px] mix-blend-screen pointer-events-none z-0"
+          />
 
+          {/* 💡 專屬雲朵層，加上球形漸層遮罩完美羽化邊緣 */}
+          <div 
+            className="absolute inset-0 overflow-hidden z-0 pointer-events-none"
+            style={{ WebkitMaskImage: 'radial-gradient(ellipse 80% 80% at 60% 50%, rgba(0,0,0,1) 40%, rgba(0,0,0,0) 100%)' }}
+          >
             {/* 前景雲 */}
             <motion.div
-              animate={{ x: [50, -50, 50], y: [20, -20, 20], scale: [1, 1.15, 1], opacity: [0.15, 0.3, 0.15] }} 
+              animate={{ x: [50, -50, 50], y: [20, -20, 20], scale: [1, 1.15, 1], opacity: [0.2, 0.4, 0.2] }} 
               transition={{ duration: 19, repeat: Infinity, ease: 'easeInOut' }}
               className="absolute top-[-5%] right-[-10%] w-[1200px] h-[1200px] mix-blend-screen"
               style={{ backgroundImage: "url('/cloud-right.png')", backgroundSize: 'contain', backgroundRepeat: 'no-repeat', backgroundPosition: 'center', filter: 'blur(5px)' }}
             />
             {/* 後景雲 */}
             <motion.div
-              animate={{ x: [-60, 60, -60], y: [-30, 30, -30], scale: [1.2, 0.9, 1.2], opacity: [0.1, 0.2, 0.1] }} 
+              animate={{ x: [-60, 60, -60], y: [-30, 30, -30], scale: [1.2, 0.9, 1.2], opacity: [0.15, 0.25, 0.15] }} 
               transition={{ duration: 24, repeat: Infinity, ease: 'easeInOut' }}
               className="absolute bottom-[-10%] left-[0%] w-[1000px] h-[1000px] mix-blend-screen"
               style={{ backgroundImage: "url('/cloud-right.png')", backgroundSize: 'contain', backgroundRepeat: 'no-repeat', backgroundPosition: 'center', filter: 'blur(10px)' }}
             />
           </div>
 
-          <div className="absolute right-[5%] top-[8%] text-[450px] font-black italic text-red-500/15 leading-none pointer-events-none z-0 tracking-tighter">
+          <div className="absolute right-[5%] top-[8%] text-[450px] font-black italic text-red-400/15 leading-none pointer-events-none z-0 tracking-tighter">
             {p2Int}
           </div>
 
@@ -268,7 +265,6 @@ export default function StageScreenPage() {
         </div>
       </div>
 
-      {/* 💡 修正 2：QR Code 大幅上移避開名字 (bottom-[38%]) */}
       {!match.show_lottery && originUrl && (
         <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 1 }} className="absolute bottom-[38%] right-[3%] z-40 bg-black/90 backdrop-blur-xl p-4 rounded-3xl border border-red-900/60 shadow-[0_0_50px_rgba(0,0,0,0.9)] flex flex-col items-center">
           <div className="flex items-center gap-2 mb-3"><div className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></div><h3 className="text-white font-bold text-[11px] tracking-[0.2em] uppercase">Scan To Vote</h3></div>
