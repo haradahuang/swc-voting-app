@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useLayoutEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { motion, AnimatePresence } from 'framer-motion';
 import QRCode from 'react-qr-code';
@@ -7,12 +7,34 @@ import QRCode from 'react-qr-code';
 export default function StageScreenPage() {
   const [match, setMatch] = useState<any>(null);
   const [originUrl, setOriginUrl] = useState<string>('');
+  const [scale, setScale] = useState(1);
   
   const [isSpinning, setIsSpinning] = useState(false);
   const [hasSpun, setHasSpun] = useState(false); 
   const [realVoters, setRealVoters] = useState<string[]>([]);
   const [spinningNames, setSpinningNames] = useState<string[]>([]);
   const [lotteryPage, setLotteryPage] = useState(0);
+
+  // 💡 核心修正：自動縮放邏輯，鎖定 1920x1080
+  useLayoutEffect(() => {
+    const handleResize = () => {
+      const designWidth = 1920;
+      const designHeight = 1080;
+      const windowWidth = window.innerWidth;
+      const windowHeight = window.innerHeight;
+      
+      // 計算最適合的縮放比例
+      const scaleX = windowWidth / designWidth;
+      const scaleY = windowHeight / designHeight;
+      const newScale = Math.min(scaleX, scaleY);
+      
+      setScale(newScale);
+    };
+
+    window.addEventListener('resize', handleResize);
+    handleResize(); // 初始化
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   useEffect(() => {
     if (typeof window !== 'undefined') setOriginUrl(window.location.origin);
@@ -93,199 +115,182 @@ export default function StageScreenPage() {
   const currentWinners = match.lottery_winners?.slice(lotteryPage * 3, (lotteryPage * 3) + 3) || [];
 
   return (
-    <div className="h-[100dvh] w-screen bg-black flex overflow-hidden font-sans select-none relative">
+    // 💡 外層容器：確保螢幕背景為黑，並將內部等比例置中
+    <div className="h-screen w-screen bg-black flex items-center justify-center overflow-hidden">
       
-      {/* 最深層黑底 */}
-      <div className="absolute inset-0 z-0 bg-black"></div>
-
-      {/* ================= 🔵 左半部：藍方斜切立體艙 ================= */}
+      {/* 💡 縮放畫布：鎖定 1920x1080 並進行 transform 縮放 */}
       <div 
-        className="absolute left-0 top-0 h-full w-[53vw] z-10"
-        style={{ clipPath: 'polygon(0 0, 100% 0, 85% 100%, 0 100%)', filter: 'drop-shadow(0 0 30px rgba(37,99,235,0.4))' }}
+        style={{
+          width: '1920px',
+          height: '1080px',
+          transform: `scale(${scale})`,
+          transformOrigin: 'center center',
+          flexShrink: 0,
+        }}
+        className="relative bg-black shadow-2xl overflow-hidden font-sans select-none"
       >
+        
+        {/* ================= 🔵 左半部內容 ================= */}
         <div 
-          className="absolute inset-0"
-          style={{ 
-            background: 'linear-gradient(135deg, #0c246b 0%, #040d2b 50%, #01020a 100%)',
-            clipPath: 'polygon(0 0, calc(100% - 4px) 0, calc(85% - 4px) 100%, 0 100%)' 
-          }}
+          className="absolute left-0 top-0 h-full w-[1018px] z-10" // 鎖定像素寬度 53vw 換算
+          style={{ clipPath: 'polygon(0 0, 100% 0, 85% 100%, 0 100%)', filter: 'drop-shadow(0 0 30px rgba(37,99,235,0.4))' }}
         >
-          {/* 💡 強制渲染：多層次霓虹光球 (深海藍 + 紫色)，速度拉慢 */}
-          <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
-            {/* 深海藍主光暈 - 微微呼吸 (duration: 8 -> 20) */}
-            <motion.div animate={{ opacity: [0.5, 0.9, 0.5], scale: [1, 1.05, 1] }} transition={{ duration: 20, repeat: Infinity, ease: 'easeInOut' }} // 💡 速度變慢，動作幅度縮小
-              className="absolute top-[10%] left-[5%] w-[1000px] h-[1000px] mix-blend-screen"
-              style={{ background: 'radial-gradient(circle, rgba(37,99,235,0.7) 0%, rgba(0,0,0,0) 70%)' }} />
-            
-            {/* 紫色點綴光暈 (超高亮度) - 微微呼吸 (duration: 11 -> 25) */}
-            <motion.div animate={{ opacity: [0.4, 0.8, 0.4], scale: [1, 1.1, 1] }} transition={{ duration: 25, repeat: Infinity, ease: 'easeInOut' }} // 💡 速度變慢，動作幅度縮小
-              className="absolute bottom-[10%] left-[20%] w-[800px] h-[800px] mix-blend-screen"
-              style={{ background: 'radial-gradient(circle, rgba(168,85,247,0.6) 0%, rgba(0,0,0,0) 70%)' }} />
-          </div>
-
-          {/* ☁️ 真實雲朵層 - 微微動，速度拉慢 */}
-          <div className="absolute inset-0 overflow-hidden z-0 pointer-events-none" style={{ WebkitMaskImage: 'radial-gradient(ellipse 80% 80% at 40% 50%, rgba(0,0,0,1) 30%, rgba(0,0,0,0) 100%)' }}>
-            {/* 前景雲 - 微微動 ( duration: 18 -> 40, x: [-50, 50] -> [-20, 20], y: [-20, 20] -> [-10, 10], scale: 1.15 -> 1.05 ) */}
-            <motion.div animate={{ x: [-20, 20, -20], y: [-10, 10, -10], scale: [1, 1.05, 1], opacity: [0.3, 0.5, 0.3] }} transition={{ duration: 40, repeat: Infinity, ease: 'easeInOut' }} // 💡 微微動，速度慢
-              className="absolute top-[-10%] left-[-10%] w-[1200px] h-[1200px] mix-blend-screen"
-              style={{ backgroundImage: "url('/cloud-left.png')", backgroundSize: 'contain', backgroundRepeat: 'no-repeat', backgroundPosition: 'center', filter: 'blur(5px)' }} />
-            {/* 後景雲 - 微微動 ( duration: 25 -> 50, x: [60, -60] -> [30, -30], y: [30, -30] -> [15, -15], scale: 1.2 -> 1.1 ) */}
-            <motion.div animate={{ x: [30, -30, 30], y: [15, -15, 15], scale: [1.1, 0.95, 1.1], opacity: [0.2, 0.4, 0.2] }} transition={{ duration: 50, repeat: Infinity, ease: 'easeInOut' }} // 💡 微微動，速度慢
-              className="absolute bottom-[-10%] right-[0%] w-[1000px] h-[1000px] mix-blend-screen"
-              style={{ backgroundImage: "url('/cloud-left.png')", backgroundSize: 'contain', backgroundRepeat: 'no-repeat', backgroundPosition: 'center', filter: 'blur(10px)' }} />
-          </div>
-
-          {/* 背景巨型數字 */}
-          <div className="absolute left-[5%] top-[8%] text-[450px] font-black italic text-blue-400/20 leading-none pointer-events-none z-0 tracking-tighter">
-            {p1Int}
-          </div>
-
-          {/* 選手半身照 */}
-          <div className="absolute inset-0 flex items-center justify-center pt-10 z-10">
-            {match.p1_avatar && (
-              <img src={match.p1_avatar} style={{ transform: `translate(${match.p1_x - 50}%, ${match.p1_y - 50}%) scale(${match.p1_size / 100})`, transformOrigin: 'center center' }} className="absolute w-[900px] h-[900px] object-contain max-w-none drop-shadow-[0_20px_40px_rgba(0,0,0,0.8)]" alt={match.p1_name} />
-            )}
-          </div>
-
-          <div className="absolute bottom-0 left-0 w-full h-[25vh] bg-gradient-to-t from-[#01020a] via-[#01020a]/80 to-transparent z-20"></div>
-
-          {/* 資訊看板 */}
-          <div className="absolute bottom-16 w-full flex flex-col items-center pr-[10%] z-30">
-            <h2 className={`${nameTextClass} font-black text-white italic tracking-widest drop-shadow-[0_5px_15px_rgba(0,0,0,1)]`}>{match.p1_name}</h2>
-            <div className="flex items-baseline gap-6 bg-blue-950/60 px-10 py-3 rounded-3xl border border-blue-500/30 backdrop-blur-md shadow-[0_10px_30px_rgba(0,0,0,0.8)]">
-              <div className="text-4xl font-bold text-blue-400 tracking-widest"><motion.span key={`v1-${match.p1_votes}`} initial={{ scale: 2 }} animate={{ scale: 1 }} className="inline-block origin-bottom">{match.p1_votes}</motion.span> <span className="text-xl opacity-70">VOTES</span></div>
-              <div className="text-white tracking-tighter drop-shadow-[0_0_20px_rgba(59,130,246,1)]"><span className="text-[60px] font-black">{p1Int}</span><span className="text-[25px] font-black">.{p1Dec}%</span></div>
+          <div 
+            className="absolute inset-0"
+            style={{ 
+              background: 'linear-gradient(135deg, #0c246b 0%, #040d2b 50%, #01020a 100%)',
+              clipPath: 'polygon(0 0, calc(100% - 4px) 0, calc(85% - 4px) 100%, 0 100%)' 
+            }}
+          >
+            {/* 藍紫色光暈與雲霧 - 微微呼吸 */}
+            <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
+              <motion.div animate={{ opacity: [0.5, 0.9, 0.5], scale: [1, 1.05, 1] }} transition={{ duration: 20, repeat: Infinity, ease: 'easeInOut' }}
+                className="absolute top-[10%] left-[5%] w-[1000px] h-[1000px] mix-blend-screen"
+                style={{ background: 'radial-gradient(circle, rgba(37,99,235,0.7) 0%, rgba(0,0,0,0) 70%)' }} />
+              <motion.div animate={{ opacity: [0.4, 0.8, 0.4], scale: [1, 1.1, 1] }} transition={{ duration: 25, repeat: Infinity, ease: 'easeInOut' }}
+                className="absolute bottom-[10%] left-[20%] w-[800px] h-[800px] mix-blend-screen"
+                style={{ background: 'radial-gradient(circle, rgba(168,85,247,0.6) 0%, rgba(0,0,0,0) 70%)' }} />
             </div>
-          </div>
-        </div>
-      </div>
 
-      {/* ================= 🔴 右半部：紅方斜切立體艙 ================= */}
-      <div 
-        className="absolute right-0 top-0 h-full w-[53vw] z-10"
-        style={{ clipPath: 'polygon(15% 0, 100% 0, 100% 100%, 0 100%)', filter: 'drop-shadow(0 0 30px rgba(220,38,38,0.4))' }}
-      >
-        <div 
-          className="absolute inset-0"
-          style={{ 
-            background: 'linear-gradient(225deg, #6b0c15 0%, #1a0105 50%, #050002 100%)',
-            clipPath: 'polygon(calc(15% + 4px) 0, 100% 0, 100% 100%, 4px 100%)' 
-          }}
-        >
-          {/* 💡 強制渲染：多層次霓虹光球 (赤焰紅 + 紫色 + 黃色)，速度拉慢 */}
-          <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
-            {/* 赤焰紅主光暈 - 微微呼吸 (duration: 9 -> 22) */}
-            <motion.div animate={{ opacity: [0.6, 0.9, 0.6], scale: [1, 1.05, 1] }} transition={{ duration: 22, repeat: Infinity, ease: 'easeInOut' }} // 💡 速度變慢，動作幅度縮小
-              className="absolute top-[10%] right-[10%] w-[1000px] h-[1000px] mix-blend-screen"
-              style={{ background: 'radial-gradient(circle, rgba(220,38,38,0.6) 0%, rgba(0,0,0,0) 70%)' }} />
-            
-            {/* 紫色點綴光暈 (超高亮度) - 微微呼吸 (duration: 12 -> 26) */}
-            <motion.div animate={{ opacity: [0.5, 0.8, 0.5], scale: [1, 1.1, 1] }} transition={{ duration: 26, repeat: Infinity, ease: 'easeInOut' }} // 💡 速度變慢，動作幅度縮小
-              className="absolute top-[30%] right-[30%] w-[700px] h-[700px] mix-blend-screen"
-              style={{ background: 'radial-gradient(circle, rgba(168,85,247,0.5) 0%, rgba(0,0,0,0) 70%)' }} />
-              
-            {/* 黃色點綴光暈 (超高亮度) - 微微呼吸 (duration: 7 -> 18) */}
-            <motion.div animate={{ opacity: [0.4, 0.7, 0.4], scale: [1, 1.05, 1] }} transition={{ duration: 18, repeat: Infinity, ease: 'easeInOut' }} // 💡 速度變慢，動作幅度縮小
-              className="absolute bottom-[10%] right-[20%] w-[800px] h-[800px] mix-blend-screen"
-              style={{ background: 'radial-gradient(circle, rgba(234,179,8,0.5) 0%, rgba(0,0,0,0) 70%)' }} />
-          </div>
-
-          {/* ☁️ 真實雲朵層 - 微微動，速度拉慢 */}
-          <div className="absolute inset-0 overflow-hidden z-0 pointer-events-none" style={{ WebkitMaskImage: 'radial-gradient(ellipse 80% 80% at 60% 50%, rgba(0,0,0,1) 30%, rgba(0,0,0,0) 100%)' }}>
-            {/* 前景雲 - 微微動 ( duration: 19 -> 42, x: [50, -50] -> [20, -20], y: [20, -20] -> [10, -10], scale: 1.15 -> 1.05 ) */}
-            <motion.div animate={{ x: [20, -20, 20], y: [10, -10, 10], scale: [1, 1.05, 1], opacity: [0.3, 0.5, 0.3] }} transition={{ duration: 42, repeat: Infinity, ease: 'easeInOut' }} // 💡 微微動，速度慢
-              className="absolute top-[-5%] right-[-10%] w-[1200px] h-[1200px] mix-blend-screen"
-              style={{ backgroundImage: "url('/cloud-right.png')", backgroundSize: 'contain', backgroundRepeat: 'no-repeat', backgroundPosition: 'center', filter: 'blur(5px)' }} />
-            {/* 後景雲 - 微微動 ( duration: 24 -> 48, x: [-60, 60] -> [-30, 30], y: [-30, 30] -> [-15, 15], scale: 1.2 -> 1.1 ) */}
-            <motion.div animate={{ x: [-30, 30, -30], y: [-15, 15, -15], scale: [1.1, 0.95, 1.1], opacity: [0.2, 0.4, 0.2] }} transition={{ duration: 48, repeat: Infinity, ease: 'easeInOut' }} // 💡 微微動，速度慢
-              className="absolute bottom-[-10%] left-[0%] w-[1000px] h-[1000px] mix-blend-screen"
-              style={{ backgroundImage: "url('/cloud-right.png')", backgroundSize: 'contain', backgroundRepeat: 'no-repeat', backgroundPosition: 'center', filter: 'blur(10px)' }} />
-          </div>
-
-          <div className="absolute right-[5%] top-[8%] text-[450px] font-black italic text-red-500/20 leading-none pointer-events-none z-0 tracking-tighter">
-            {p2Int}
-          </div>
-
-          <div className="absolute inset-0 flex items-center justify-center pt-10 z-10">
-            {match.p2_avatar && (
-              <img src={match.p2_avatar} style={{ transform: `translate(${match.p2_x - 50}%, ${match.p2_y - 50}%) scale(${match.p2_size / 100})`, transformOrigin: 'center center' }} className="absolute w-[900px] h-[900px] object-contain max-w-none drop-shadow-[0_20px_40px_rgba(0,0,0,0.8)]" alt={match.p2_name} />
-            )}
-          </div>
-
-          <div className="absolute bottom-0 left-0 w-full h-[25vh] bg-gradient-to-t from-[#080102] via-[#080102]/80 to-transparent z-20"></div>
-
-          <div className="absolute bottom-16 w-full flex flex-col items-center pl-[10%] z-30">
-            <h2 className={`${nameTextClass} font-black text-white italic tracking-widest drop-shadow-[0_5px_15px_rgba(0,0,0,1)]`}>{match.p2_name}</h2>
-            <div className="flex items-baseline gap-6 bg-red-950/60 px-10 py-3 rounded-3xl border border-red-500/30 backdrop-blur-md shadow-[0_10px_30px_rgba(0,0,0,0.8)] flex-row-reverse">
-              <div className="text-4xl font-bold text-red-400 tracking-widest"><motion.span key={`v2-${match.p2_votes}`} initial={{ scale: 2 }} animate={{ scale: 1 }} className="inline-block origin-bottom">{match.p2_votes}</motion.span> <span className="text-xl opacity-70">VOTES</span></div>
-              <div className="text-white tracking-tighter drop-shadow-[0_0_20px_rgba(239,68,68,1)]"><span className="text-[60px] font-black">{p2Int}</span><span className="text-[25px] font-black">.{p2Dec}%</span></div>
+            {/* 雲朵層 */}
+            <div className="absolute inset-0 overflow-hidden z-0 pointer-events-none" style={{ WebkitMaskImage: 'radial-gradient(ellipse 80% 80% at 40% 50%, rgba(0,0,0,1) 30%, rgba(0,0,0,0) 100%)' }}>
+              <motion.div animate={{ x: [-20, 20, -20], y: [-10, 10, -10], scale: [1, 1.05, 1], opacity: [0.3, 0.5, 0.3] }} transition={{ duration: 40, repeat: Infinity, ease: 'easeInOut' }}
+                className="absolute top-[-10%] left-[-10%] w-[1200px] h-[1200px] mix-blend-screen"
+                style={{ backgroundImage: "url('/cloud-left.png')", backgroundSize: 'contain', backgroundRepeat: 'no-repeat', backgroundPosition: 'center', filter: 'blur(5px)' }} />
             </div>
-          </div>
-        </div>
-      </div>
 
-      {/* ================= ⚔️ 畫面頂層 UI ================= */}
-      
-      {/* 螢光線條 */}
-      <div className="absolute left-0 top-0 h-full w-[53vw] z-20 pointer-events-none" style={{ filter: 'drop-shadow(0 0 15px #003cff)' }}>
-        <div className="absolute left-0 top-0 h-full w-full bg-[#003cff]" style={{ clipPath: 'polygon(calc(100% - 4px) 0, 100% 0, 85% 100%, calc(85% - 4px) 100%)' }}></div>
-      </div>
-      <div className="absolute right-0 top-0 h-full w-[53vw] z-20 pointer-events-none" style={{ filter: 'drop-shadow(0 0 15px #ff003c)' }}>
-        <div className="absolute left-0 top-0 h-full w-full bg-[#ff003c]" style={{ clipPath: 'polygon(15% 0, calc(15% + 4px) 0, 4px 100%, 0 100%)' }}></div>
-      </div>
+            <div className="absolute left-[100px] top-[100px] text-[450px] font-black italic text-blue-400/20 leading-none pointer-events-none z-0 tracking-tighter">
+              {p1Int}
+            </div>
 
-      {/* 置中標題 */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 z-40 bg-zinc-950 px-16 py-4 rounded-b-3xl border-b-2 border-x-2 border-zinc-800 shadow-[0_10px_30px_rgba(0,0,0,0.8)] flex flex-col items-center justify-center">
-        <h1 className="text-3xl font-black text-white tracking-[0.3em] uppercase drop-shadow-md">LIVE VOTE</h1>
-        {match.tournament_name && <div className="text-sm font-bold text-zinc-400 tracking-[0.2em] mt-1 uppercase">{match.tournament_name}</div>}
-      </div>
+            <div className="absolute inset-0 flex items-center justify-center pt-10 z-10">
+              {match.p1_avatar && (
+                <img src={match.p1_avatar} style={{ transform: `translate(${match.p1_x - 50}%, ${match.p1_y - 50}%) scale(${match.p1_size / 100})`, transformOrigin: 'center center' }} className="absolute w-[900px] h-[900px] object-contain max-w-none drop-shadow-[0_20px_40px_rgba(0,0,0,0.8)]" alt={match.p1_name} />
+              )}
+            </div>
 
-      {/* VS 金色外圈 */}
-      <div className="absolute left-1/2 top-[45%] -translate-x-1/2 -translate-y-1/2 z-40">
-        <div className="rounded-full p-[4px] bg-gradient-to-br from-yellow-300 via-yellow-500 to-yellow-700 shadow-[0_0_40px_rgba(234,179,8,0.6)]">
-          <div className="bg-black text-white italic font-black text-6xl rounded-full w-28 h-28 flex items-center justify-center">VS</div>
-        </div>
-      </div>
+            <div className="absolute bottom-0 left-0 w-full h-[300px] bg-gradient-to-t from-[#01020a] via-[#01020a]/80 to-transparent z-20"></div>
 
-      {/* QR Code 在右上方 */}
-      {!match.show_lottery && originUrl && (
-        <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 1 }} className="absolute bottom-[38%] right-[3%] z-40 bg-black/90 backdrop-blur-xl p-4 rounded-3xl border border-red-900/60 shadow-[0_0_50px_rgba(0,0,0,0.9)] flex flex-col items-center">
-          <div className="flex items-center gap-2 mb-3"><div className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></div><h3 className="text-white font-bold text-[11px] tracking-[0.2em] uppercase">Scan To Vote</h3></div>
-          <div className="bg-white p-2 rounded-2xl shadow-inner"><QRCode value={originUrl} size={110} level="H" /></div>
-        </motion.div>
-      )}
-
-      {/* ================= 🏆 抽獎揭曉全畫面 ================= */}
-      <AnimatePresence>
-        {match.show_lottery && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 z-50 bg-black/85 backdrop-blur-lg flex flex-col items-center justify-center font-sans overflow-hidden">
-            <motion.div initial={{ scale: 0.9, opacity: 0, y: 30 }} animate={{ scale: 1, opacity: 1, y: 0 }} transition={{ type: "spring", bounce: 0.4 }} className="bg-gradient-to-b from-[#111] to-black border border-yellow-500/30 p-12 rounded-[2rem] shadow-[0_0_100px_rgba(250,204,21,0.2)] relative flex flex-col items-center min-w-[850px]">
-              <h2 className="text-yellow-400 text-6xl font-black italic tracking-[0.3em] uppercase mb-12 drop-shadow-[0_0_20px_rgba(250,204,21,0.6)]">WINNERS</h2>
-              <div className="w-full relative h-[500px]">
-                {isSpinning ? (
-                   <div className="absolute inset-0 w-full flex flex-col items-center justify-start gap-6">
-                     {spinningNames.slice(0, 3).map((name, i) => (
-                       <div key={i} className="bg-zinc-900/50 border border-zinc-700 w-full rounded-2xl py-6 px-10 text-center animate-pulse"><span className="text-6xl font-black text-zinc-400 tracking-widest blur-[1px]">{name}</span></div>
-                     ))}
-                   </div>
-                ) : (
-                   <AnimatePresence mode="wait">
-                     <motion.div key={lotteryPage} initial={{ opacity: 0, x: 50 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -50 }} transition={{ duration: 0.3 }} className="absolute inset-0 w-full flex flex-col items-center justify-start gap-6 overflow-hidden">
-                       {currentWinners.slice(0, 3).map((w: any, idx: number) => (
-                         <div key={idx} className="bg-gradient-to-r from-yellow-900/30 via-yellow-600/20 to-yellow-900/30 border border-yellow-500/40 w-full rounded-2xl py-6 px-10 flex flex-col items-center justify-center relative overflow-hidden shadow-lg">
-                           <div className="absolute inset-0 bg-yellow-400/5 animate-pulse mix-blend-overlay"></div>
-                           <div className="text-6xl font-black text-white tracking-widest drop-shadow-[0_0_15px_rgba(255,255,255,0.6)] z-10 mb-2 truncate max-w-[700px]">{w.user_name}</div>
-                           <div className="text-3xl text-yellow-500/80 tracking-widest font-bold z-10">{maskEmail(w.user_email)}</div>
-                         </div>
-                       ))}
-                     </motion.div>
-                   </AnimatePresence>
-                )}
+            <div className="absolute bottom-16 w-full flex flex-col items-center pr-[150px] z-30">
+              <h2 className={`${nameTextClass} font-black text-white italic tracking-widest drop-shadow-[0_5px_15px_rgba(0,0,0,1)]`}>{match.p1_name}</h2>
+              <div className="flex items-baseline gap-6 bg-blue-950/60 px-10 py-3 rounded-3xl border border-blue-500/30 backdrop-blur-md shadow-[0_10px_30px_rgba(0,0,0,0.8)]">
+                <div className="text-4xl font-bold text-blue-400 tracking-widest">{match.p1_votes} <span className="text-xl opacity-70">VOTES</span></div>
+                <div className="text-white tracking-tighter drop-shadow-[0_0_20px_rgba(59,130,246,1)]"><span className="text-[60px] font-black">{p1Int}</span><span className="text-[25px] font-black">.{p1Dec}%</span></div>
               </div>
-            </motion.div>
+            </div>
+          </div>
+        </div>
+
+        {/* ================= 🔴 右半部內容 ================= */}
+        <div 
+          className="absolute right-0 top-0 h-full w-[1018px] z-10"
+          style={{ clipPath: 'polygon(15% 0, 100% 0, 100% 100%, 0 100%)', filter: 'drop-shadow(0 0 30px rgba(220,38,38,0.4))' }}
+        >
+          <div 
+            className="absolute inset-0"
+            style={{ 
+              background: 'linear-gradient(225deg, #6b0c15 0%, #1a0105 50%, #050002 100%)',
+              clipPath: 'polygon(calc(15% + 4px) 0, 100% 0, 100% 100%, 4px 100%)' 
+            }}
+          >
+            {/* 紅紫黃光暈與雲霧 - 微微呼吸 */}
+            <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
+              <motion.div animate={{ opacity: [0.6, 0.9, 0.6], scale: [1, 1.05, 1] }} transition={{ duration: 22, repeat: Infinity, ease: 'easeInOut' }}
+                className="absolute top-[10%] right-[10%] w-[1000px] h-[1000px] mix-blend-screen"
+                style={{ background: 'radial-gradient(circle, rgba(220,38,38,0.6) 0%, rgba(0,0,0,0) 70%)' }} />
+              <motion.div animate={{ opacity: [0.4, 0.7, 0.4], scale: [1, 1.05, 1] }} transition={{ duration: 18, repeat: Infinity, ease: 'easeInOut' }}
+                className="absolute bottom-[10%] right-[20%] w-[800px] h-[800px] mix-blend-screen"
+                style={{ background: 'radial-gradient(circle, rgba(234,179,8,0.5) 0%, rgba(0,0,0,0) 70%)' }} />
+            </div>
+
+            {/* 雲朵層 */}
+            <div className="absolute inset-0 overflow-hidden z-0 pointer-events-none" style={{ WebkitMaskImage: 'radial-gradient(ellipse 80% 80% at 60% 50%, rgba(0,0,0,1) 30%, rgba(0,0,0,0) 100%)' }}>
+              <motion.div animate={{ x: [20, -20, 20], y: [10, -10, 10], scale: [1, 1.05, 1], opacity: [0.3, 0.5, 0.3] }} transition={{ duration: 42, repeat: Infinity, ease: 'easeInOut' }}
+                className="absolute top-[-5%] right-[-10%] w-[1200px] h-[1200px] mix-blend-screen"
+                style={{ backgroundImage: "url('/cloud-right.png')", backgroundSize: 'contain', backgroundRepeat: 'no-repeat', backgroundPosition: 'center', filter: 'blur(5px)' }} />
+            </div>
+
+            <div className="absolute right-[100px] top-[100px] text-[450px] font-black italic text-red-500/20 leading-none pointer-events-none z-0 tracking-tighter">
+              {p2Int}
+            </div>
+
+            <div className="absolute inset-0 flex items-center justify-center pt-10 z-10">
+              {match.p2_avatar && (
+                <img src={match.p2_avatar} style={{ transform: `translate(${match.p2_x - 50}%, ${match.p2_y - 50}%) scale(${match.p2_size / 100})`, transformOrigin: 'center center' }} className="absolute w-[900px] h-[900px] object-contain max-w-none drop-shadow-[0_20px_40px_rgba(0,0,0,0.8)]" alt={match.p2_name} />
+              )}
+            </div>
+
+            <div className="absolute bottom-0 left-0 w-full h-[300px] bg-gradient-to-t from-[#080102] via-[#080102]/80 to-transparent z-20"></div>
+
+            <div className="absolute bottom-16 w-full flex flex-col items-center pl-[150px] z-30">
+              <h2 className={`${nameTextClass} font-black text-white italic tracking-widest drop-shadow-[0_5px_15px_rgba(0,0,0,1)]`}>{match.p2_name}</h2>
+              <div className="flex items-baseline gap-6 bg-red-950/60 px-10 py-3 rounded-3xl border border-red-500/30 backdrop-blur-md shadow-[0_10px_30px_rgba(0,0,0,0.8)] flex-row-reverse">
+                <div className="text-4xl font-bold text-red-400 tracking-widest">{match.p2_votes} <span className="text-xl opacity-70">VOTES</span></div>
+                <div className="text-white tracking-tighter drop-shadow-[0_0_20px_rgba(239,68,68,1)]"><span className="text-[60px] font-black">{p2Int}</span><span className="text-[25px] font-black">.{p2Dec}%</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* ================= ⚔️ 畫面頂層 UI (固定座標) ================= */}
+        
+        {/* 斜切螢光線條 */}
+        <div className="absolute left-[958px] top-0 h-full w-[4px] z-20 bg-[#003cff] shadow-[0_0_15px_#003cff]" style={{ transform: 'skewX(-8.5deg)' }}></div>
+        <div className="absolute left-[962px] top-0 h-full w-[4px] z-20 bg-[#ff003c] shadow-[0_0_15px_#ff003c]" style={{ transform: 'skewX(-8.5deg)' }}></div>
+
+        {/* 置中標題 */}
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 z-40 bg-zinc-950 px-16 py-4 rounded-b-3xl border-b-2 border-x-2 border-zinc-800 shadow-[0_10px_30px_rgba(0,0,0,0.8)] flex flex-col items-center justify-center">
+          <h1 className="text-3xl font-black text-white tracking-[0.3em] uppercase drop-shadow-md">LIVE VOTE</h1>
+          {match.tournament_name && <div className="text-sm font-bold text-zinc-400 tracking-[0.2em] mt-1 uppercase">{match.tournament_name}</div>}
+        </div>
+
+        {/* VS 標誌 */}
+        <div className="absolute left-1/2 top-[480px] -translate-x-1/2 -translate-y-1/2 z-40">
+          <div className="rounded-full p-[4px] bg-gradient-to-br from-yellow-300 via-yellow-500 to-yellow-700 shadow-[0_0_40px_rgba(234,179,8,0.6)]">
+            <div className="bg-black text-white italic font-black text-6xl rounded-full w-28 h-28 flex items-center justify-center">VS</div>
+          </div>
+        </div>
+
+        {/* QR Code */}
+        {!match.show_lottery && originUrl && (
+          <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 1 }} className="absolute top-[450px] right-[50px] z-40 bg-black/90 backdrop-blur-xl p-4 rounded-3xl border border-red-900/60 shadow-[0_0_50px_rgba(0,0,0,0.9)] flex flex-col items-center">
+            <div className="flex items-center gap-2 mb-3"><div className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></div><h3 className="text-white font-bold text-[11px] tracking-[0.2em] uppercase">Scan To Vote</h3></div>
+            <div className="bg-white p-2 rounded-2xl shadow-inner"><QRCode value={originUrl} size={110} level="H" /></div>
           </motion.div>
         )}
-      </AnimatePresence>
+
+        {/* 🏆 抽獎畫面 (層級最高) */}
+        <AnimatePresence>
+          {match.show_lottery && (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 z-50 bg-black/85 backdrop-blur-lg flex flex-col items-center justify-center font-sans overflow-hidden">
+              <motion.div initial={{ scale: 0.9, opacity: 0, y: 30 }} animate={{ scale: 1, opacity: 1, y: 0 }} transition={{ type: "spring", bounce: 0.4 }} className="bg-gradient-to-b from-[#111] to-black border border-yellow-500/30 p-12 rounded-[2rem] shadow-[0_0_100px_rgba(250,204,21,0.2)] relative flex flex-col items-center min-w-[850px]">
+                <h2 className="text-yellow-400 text-6xl font-black italic tracking-[0.3em] uppercase mb-12 drop-shadow-[0_0_20px_rgba(250,204,21,0.6)]">WINNERS</h2>
+                <div className="w-full relative h-[500px]">
+                  {isSpinning ? (
+                     <div className="absolute inset-0 w-full flex flex-col items-center justify-start gap-6">
+                       {spinningNames.slice(0, 3).map((name, i) => (
+                         <div key={i} className="bg-zinc-900/50 border border-zinc-700 w-full rounded-2xl py-6 px-10 text-center animate-pulse"><span className="text-6xl font-black text-zinc-400 tracking-widest blur-[1px]">{name}</span></div>
+                       ))}
+                     </div>
+                  ) : (
+                     <AnimatePresence mode="wait">
+                       <motion.div key={lotteryPage} initial={{ opacity: 0, x: 50 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -50 }} transition={{ duration: 0.3 }} className="absolute inset-0 w-full flex flex-col items-center justify-start gap-6 overflow-hidden">
+                         {currentWinners.slice(0, 3).map((w: any, idx: number) => (
+                           <div key={idx} className="bg-gradient-to-r from-yellow-900/30 via-yellow-600/20 to-yellow-900/30 border border-yellow-500/40 w-full rounded-2xl py-6 px-10 flex flex-col items-center justify-center relative overflow-hidden shadow-lg">
+                             <div className="absolute inset-0 bg-yellow-400/5 animate-pulse mix-blend-overlay"></div>
+                             <div className="text-6xl font-black text-white tracking-widest drop-shadow-[0_0_15px_rgba(255,255,255,0.6)] z-10 mb-2 truncate max-w-[700px]">{w.user_name}</div>
+                             <div className="text-3xl text-yellow-500/80 tracking-widest font-bold z-10">{maskEmail(w.user_email)}</div>
+                           </div>
+                         ))}
+                       </motion.div>
+                     </AnimatePresence>
+                  )}
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
     </div>
   );
 }
