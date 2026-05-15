@@ -19,6 +19,7 @@ export default function StageScreenPage() {
   const voteBgmRef = useRef<HTMLAudioElement | null>(null);
   const springBgmRef = useRef<HTMLAudioElement | null>(null);
   const winBgmRef = useRef<HTMLAudioElement | null>(null);
+  const winTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // 初始化音效物件
   useEffect(() => {
@@ -30,12 +31,15 @@ export default function StageScreenPage() {
       springBgmRef.current = new Audio('/spring.mp3');
       
       winBgmRef.current = new Audio('/win.mp3');
+      // 💡 修正 2：將 win.mp3 設定為輪播模式
+      winBgmRef.current.loop = true;
     }
 
     return () => {
       voteBgmRef.current?.pause();
       springBgmRef.current?.pause();
       winBgmRef.current?.pause();
+      if (winTimeoutRef.current) clearTimeout(winTimeoutRef.current);
     };
   }, []);
 
@@ -44,7 +48,11 @@ export default function StageScreenPage() {
     if (!match) return;
 
     if (!match.show_lottery) {
-      // 【投票階段 / 名單關閉】：停止所有抽獎音效，恢復播放背景音樂
+      // 【投票階段 / 抽獎畫面關閉】
+      // 停止延後播放的計時器
+      if (winTimeoutRef.current) clearTimeout(winTimeoutRef.current);
+      
+      // 停止所有抽獎音效並倒帶
       if (winBgmRef.current) {
         winBgmRef.current.pause();
         winBgmRef.current.currentTime = 0;
@@ -53,22 +61,30 @@ export default function StageScreenPage() {
         springBgmRef.current.pause();
         springBgmRef.current.currentTime = 0;
       }
+      // 恢復播放投票背景音樂
       voteBgmRef.current?.play().catch(() => {});
       
     } else {
-      // 【抽獎階段】：停止背景音樂
+      // 【進入抽獎畫面】：暫停主背景音樂
       voteBgmRef.current?.pause();
 
       if (isSpinning) {
-        // 正在 4 秒倒數捲動中：播放 spring.mp3
+        // 正在捲動名單：播放 spring.mp3
         springBgmRef.current?.play().catch(() => {});
       } else {
-        // 💡 捲動結束 (公布名單)：停止 spring，開始播放 win.mp3
+        // 捲動名單結束：停止 spring.mp3
         if (springBgmRef.current) {
           springBgmRef.current.pause();
           springBgmRef.current.currentTime = 0;
         }
-        winBgmRef.current?.play().catch(() => {});
+
+        // 💡 修正 1：名單公布後，延後 2 秒才播放 win.mp3
+        if (winTimeoutRef.current) clearTimeout(winTimeoutRef.current);
+        winTimeoutRef.current = setTimeout(() => {
+          if (match.show_lottery) { // 確保此時畫面還沒被關閉
+            winBgmRef.current?.play().catch(() => {});
+          }
+        }, 2000);
       }
     }
   }, [match?.show_lottery, isSpinning, match]);
@@ -111,7 +127,7 @@ export default function StageScreenPage() {
         const names = data?.map(d => d.user_name) || [];
         setRealVoters(names.length > 0 ? names : ['Lucky Winner', 'Player', 'Vote User']);
       });
-      // 💡 抽獎秒數改為 4 秒 (4000ms)
+      // 💡 抽獎秒數改為 4 秒
       setTimeout(() => { setIsSpinning(false); }, 4000);
     }
     if (!match?.show_lottery) {
@@ -161,8 +177,7 @@ export default function StageScreenPage() {
     if (!email) return '';
     const [name, domain] = email.split('@');
     if (!domain) return email;
-    if (name.length <= 3) return `${name}***@${domain}`;
-    return `${name.substring(0, 3)}***${name.substring(6)}@${domain}`;
+    return `${name.substring(0, 3)}***@${domain}`;
   };
 
   const currentWinners = match.lottery_winners?.slice(lotteryPage * 3, (lotteryPage * 3) + 3) || [];
@@ -257,7 +272,7 @@ export default function StageScreenPage() {
           </motion.div>
         )}
 
-        {/* 🏆 抽獎畫面 */}
+        {/* 🏆 抽獎揭曉畫面 */}
         <AnimatePresence>
           {match.show_lottery && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 z-50 bg-black/85 backdrop-blur-lg flex flex-col items-center justify-center font-sans overflow-hidden">
