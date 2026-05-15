@@ -7,6 +7,8 @@ import QRCode from 'react-qr-code';
 export default function StageScreenPage() {
   const [match, setMatch] = useState<any>(null);
   const [originUrl, setOriginUrl] = useState<string>('');
+  
+  // 縮放比例狀態
   const [scale, setScale] = useState(1);
 
   // 音訊啟動狀態
@@ -24,6 +26,7 @@ export default function StageScreenPage() {
   const winBgmRef = useRef<HTMLAudioElement | null>(null);
   const winTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  // 初始化音效物件
   useEffect(() => {
     if (typeof window !== 'undefined') {
       voteBgmRef.current = new Audio('/votebgm.mp3');
@@ -44,6 +47,7 @@ export default function StageScreenPage() {
     };
   }, []);
 
+  // 音效開關邏輯
   const handleToggleAudio = () => {
     if (!audioEnabled) {
       setAudioEnabled(true);
@@ -58,11 +62,13 @@ export default function StageScreenPage() {
     }
   };
 
+  // 音效狀態機
   useEffect(() => {
     if (!match || !audioEnabled) return;
 
     if (!match.show_lottery) {
       if (winTimeoutRef.current) clearTimeout(winTimeoutRef.current);
+      
       if (winBgmRef.current) {
         winBgmRef.current.pause();
         winBgmRef.current.currentTime = 0;
@@ -72,6 +78,7 @@ export default function StageScreenPage() {
         springBgmRef.current.currentTime = 0;
       }
       voteBgmRef.current?.play().catch(() => {});
+      
     } else {
       voteBgmRef.current?.pause();
 
@@ -83,11 +90,12 @@ export default function StageScreenPage() {
           if (match.show_lottery) {
             winBgmRef.current?.play().catch(() => {});
           }
-        }, 3800);
+        }, 3800); 
       }
     }
   }, [match?.show_lottery, isSpinning, match, audioEnabled]);
 
+  // 自動計算 1920x1080 縮放比例
   useLayoutEffect(() => {
     const handleResize = () => {
       const designWidth = 1920;
@@ -185,6 +193,7 @@ export default function StageScreenPage() {
       onClick={() => { if (!audioEnabled) handleToggleAudio() }} 
     >
       
+      {/* 靜音切換按鈕 */}
       <button 
         onClick={(e) => { e.stopPropagation(); handleToggleAudio(); }}
         className="absolute bottom-8 left-8 z-50 flex items-center justify-center w-14 h-14 rounded-full bg-white/10 hover:bg-white/20 text-white/70 hover:text-white transition-all backdrop-blur-md border border-white/10 text-2xl shadow-lg"
@@ -204,7 +213,7 @@ export default function StageScreenPage() {
       >
         <div className="absolute inset-0 z-0 bg-gradient-to-br from-[#0c246b] via-[#040d2b] to-[#01020a]"></div>
 
-        {/* ================= 左半部 ================= */}
+        {/* ================= 🔵 左半部 ================= */}
         <div className="absolute left-0 top-0 h-full w-[1018px] z-10 shadow-[0_0_50px_rgba(37,99,235,0.4)]" style={{ clipPath: 'polygon(0 0, 100% 0, 85% 100%, 0 100%)' }}>
           <div className="absolute inset-0 bg-gradient-to-br from-[#0c246b] via-[#040d2b] to-[#01020a]" style={{ clipPath: 'polygon(0 0, calc(100% - 4px) 0, calc(85% - 4px) 100%, 0 100%)' }}>
             <motion.div animate={{ opacity: [0.5, 0.8, 0.5], scale: [1, 1.1, 1] }} transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }} className="absolute top-[10%] left-[-5%] w-[1100px] h-[1100px] bg-blue-500/50 rounded-full blur-[150px] mix-blend-screen pointer-events-none z-0" />
@@ -216,8 +225,8 @@ export default function StageScreenPage() {
               <motion.div animate={{ x: [45, -45, 45], y: [20, -20, 20], scale: [1.1, 0.95, 1.1], opacity: [0.2, 0.4, 0.2] }} transition={{ duration: 50, repeat: Infinity, ease: 'easeInOut' }} className="absolute bottom-[-10%] right-[0%] w-[1000px] h-[1000px] mix-blend-screen" style={{ backgroundImage: "url('/cloud-left.png')", backgroundSize: 'contain', backgroundRepeat: 'no-repeat', backgroundPosition: 'center', filter: 'blur(10px)' }} />
             </div>
             
-            {/* 💡 修正：向左微調填補空隙 (left-[-1%]) */}
-            <div className="absolute left-[-1%] top-[8%] text-[450px] font-black italic text-blue-300/30 leading-none pointer-events-none z-0 tracking-tighter drop-shadow-[0_0_30px_rgba(96,165,250,0.4)]">{p1Int}</div>
+            {/* 💡 修正：向左微調填補空隙 (補償斜體偏移) */}
+            <div className="absolute left-[10px] top-[8%] text-[450px] font-black italic text-blue-300/30 leading-none pointer-events-none z-0 tracking-tighter drop-shadow-[0_0_30px_rgba(96,165,250,0.4)]">{p1Int}</div>
             
             <div className="absolute inset-0 z-10 overflow-hidden pt-10" style={{ clipPath: 'polygon(0 0, 100% 0, calc(100% - 100px) 100%, 0 100%)' }}>
               {match.p1_avatar && <img src={match.p1_avatar} style={{ transform: `translate(${match.p1_x - 50}%, ${match.p1_y - 50}%) scale(${match.p1_size / 100})`, transformOrigin: 'center center' }} className="absolute w-[900px] h-[900px] object-contain max-w-none drop-shadow-[0_20px_40px_rgba(0,0,0,0.8)]" alt={match.p1_name} />}
@@ -247,8 +256,8 @@ export default function StageScreenPage() {
               <motion.div animate={{ x: [-45, 45, -45], y: [-20, 20, -20], scale: [1.1, 0.95, 1.1], opacity: [0.2, 0.4, 0.2] }} transition={{ duration: 50, repeat: Infinity, ease: 'easeInOut' }} className="absolute bottom-[-10%] left-[0%] w-[1000px] h-[1000px] mix-blend-screen" style={{ backgroundImage: "url('/cloud-right.png')", backgroundSize: 'contain', backgroundRepeat: 'no-repeat', backgroundPosition: 'center', filter: 'blur(10px)' }} />
             </div>
             
-            {/* 💡 修正：向左微調給予呼吸空間 (right-[8%]) */}
-            <div className="absolute right-[8%] top-[8%] text-[450px] font-black italic text-red-400/30 leading-none pointer-events-none z-0 tracking-tighter drop-shadow-[0_0_30px_rgba(248,113,113,0.4)]">{p2Int}</div>
+            {/* 💡 修正：向左微調給予呼吸空間 (補償斜體偏移) */}
+            <div className="absolute right-[80px] top-[8%] text-[450px] font-black italic text-red-400/30 leading-none pointer-events-none z-0 tracking-tighter drop-shadow-[0_0_30px_rgba(248,113,113,0.4)]">{p2Int}</div>
             
             <div className="absolute inset-0 z-10 overflow-hidden pt-10" style={{ clipPath: 'polygon(100px 0, 100% 0, 100% 100%, 0 100%)' }}>
               {match.p2_avatar && <img src={match.p2_avatar} style={{ transform: `translate(${match.p2_x - 50}%, ${match.p2_y - 50}%) scale(${match.p2_size / 100})`, transformOrigin: 'center center' }} className="absolute w-[900px] h-[900px] object-contain max-w-none drop-shadow-[0_20px_40px_rgba(0,0,0,0.8)]" alt={match.p2_name} />}
@@ -279,8 +288,8 @@ export default function StageScreenPage() {
           {match.tournament_name && <div className="text-sm font-bold text-zinc-400 tracking-[0.2em] mt-1 uppercase">{match.tournament_name}</div>}
         </div>
 
-        {/* 💡 修正：完美置中 VS 標誌 (left-[calc(50%+14px)]) 抵銷斜線視覺差 */}
-        <div className="absolute left-[calc(50%+14px)] top-[45%] -translate-x-1/2 -translate-y-1/2 z-40">
+        {/* 💡 修正：完美置中 VS 標誌 (使用精確的 left 座標) */}
+        <div className="absolute left-[968px] top-[486px] -translate-x-1/2 -translate-y-1/2 z-40">
           <div className="rounded-full p-[4px] bg-gradient-to-br from-yellow-300 via-yellow-500 to-yellow-700 shadow-[0_0_40px_rgba(234,179,8,0.6)]">
             <div className="bg-black text-white italic font-black text-6xl rounded-full w-28 h-28 flex items-center justify-center">VS</div>
           </div>
