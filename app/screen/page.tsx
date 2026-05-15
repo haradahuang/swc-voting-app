@@ -84,7 +84,7 @@ export default function StageScreenPage() {
           if (match.show_lottery) { // 確保此時畫面還沒被關閉
             winBgmRef.current?.play().catch(() => {});
           }
-        }, 4000);
+        }, 6000);
       }
     }
   }, [match?.show_lottery, isSpinning, match]);
