@@ -180,7 +180,7 @@ export default function StageScreenPage() {
             </div>
 
             {/* 💡 修正天空巨型數字：提高透明度與加入光暈，使其更明顯 */}
-            <div className="absolute left-[5%] top-[8%] text-[450px] font-black italic text-blue-300/40 leading-none pointer-events-none z-0 tracking-tighter drop-shadow-[0_0_30px_rgba(96,165,250,0.4)]">
+            <div className="absolute left-[5%] top-[8%] text-[450px] font-black italic text-blue-300/30 leading-none pointer-events-none z-0 tracking-tighter drop-shadow-[0_0_30px_rgba(96,165,250,0.4)]">
               {p1Int}
             </div>
 
