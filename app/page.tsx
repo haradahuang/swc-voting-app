@@ -124,11 +124,12 @@ export default function VotePage() {
         {!match.is_voting_open && (
            <div className="absolute inset-0 z-40 bg-black/70 backdrop-blur-sm flex items-center justify-center">
              <div className="text-4xl md:text-6xl font-black italic text-red-500 border-8 border-red-600 px-8 py-4 rounded-3xl rotate-[-10deg] tracking-widest bg-black/80 shadow-[0_0_80px_rgba(220,38,38,0.8)] backdrop-blur-none pointer-events-none uppercase">
-                Voting Closed
+               Voting Closed
              </div>
            </div>
         )}
 
+        {/* 左方玩家一 */}
         <motion.div whileTap={{ brightness: 1.6 }} onClick={() => handleVote(1)} className="flex-1 relative cursor-pointer group overflow-hidden border-b md:border-b-0 md:border-r border-white/5">
           <div className="absolute inset-0 bg-blue-900/20 z-0" />
           <div className="absolute inset-0 w-full h-full flex items-center justify-center">
@@ -141,10 +142,9 @@ export default function VotePage() {
           </div>
         </motion.div>
 
-        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-30">
-          <div className="bg-black text-white italic font-black text-3xl md:text-5xl rounded-full w-14 h-14 md:w-24 md:h-24 flex items-center justify-center border-2 border-white/20 shadow-[0_0_30px_rgba(0,0,0,1)]">VS</div>
-        </div>
+        {/* 💡 VS 標誌已在此處被刪除 */}
 
+        {/* 右方玩家二 */}
         <motion.div whileTap={{ brightness: 1.6 }} onClick={() => handleVote(2)} className="flex-1 relative cursor-pointer group overflow-hidden">
           <div className="absolute inset-0 bg-red-900/20 z-0" />
           <div className="absolute inset-0 w-full h-full flex items-center justify-center">
