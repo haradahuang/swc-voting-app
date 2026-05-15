@@ -31,7 +31,6 @@ export default function StageScreenPage() {
       springBgmRef.current = new Audio('/spring.mp3');
       
       winBgmRef.current = new Audio('/win.mp3');
-      // 💡 修正 2：將 win.mp3 設定為輪播模式
       winBgmRef.current.loop = true;
     }
 
@@ -49,10 +48,8 @@ export default function StageScreenPage() {
 
     if (!match.show_lottery) {
       // 【投票階段 / 抽獎畫面關閉】
-      // 停止延後播放的計時器
       if (winTimeoutRef.current) clearTimeout(winTimeoutRef.current);
       
-      // 停止所有抽獎音效並倒帶
       if (winBgmRef.current) {
         winBgmRef.current.pause();
         winBgmRef.current.currentTime = 0;
@@ -61,30 +58,26 @@ export default function StageScreenPage() {
         springBgmRef.current.pause();
         springBgmRef.current.currentTime = 0;
       }
-      // 恢復播放投票背景音樂
       voteBgmRef.current?.play().catch(() => {});
       
     } else {
-      // 【進入抽獎畫面】：暫停主背景音樂
+      // 【進入抽獎畫面】
       voteBgmRef.current?.pause();
 
       if (isSpinning) {
         // 正在捲動名單：播放 spring.mp3
         springBgmRef.current?.play().catch(() => {});
       } else {
-        // 捲動名單結束：停止 spring.mp3
-        if (springBgmRef.current) {
-          springBgmRef.current.pause();
-          springBgmRef.current.currentTime = 0;
-        }
+        // 💡 修正 1：移除強制暫停 spring.mp3 的邏輯，讓它自然播完
+        // (被刪除的程式碼：springBgmRef.current.pause())
 
-        // 💡 修正 1：名單公布後，延後 2 秒才播放 win.mp3
+        // 💡 修正 2：名單公布後，延遲 5 秒 (5000ms) 播放 win.mp3
         if (winTimeoutRef.current) clearTimeout(winTimeoutRef.current);
         winTimeoutRef.current = setTimeout(() => {
           if (match.show_lottery) { // 確保此時畫面還沒被關閉
             winBgmRef.current?.play().catch(() => {});
           }
-        }, 6000);
+        }, 5000);
       }
     }
   }, [match?.show_lottery, isSpinning, match]);
@@ -127,7 +120,7 @@ export default function StageScreenPage() {
         const names = data?.map(d => d.user_name) || [];
         setRealVoters(names.length > 0 ? names : ['Lucky Winner', 'Player', 'Vote User']);
       });
-      // 💡 抽獎秒數改為 4 秒
+      // 抽獎秒數為 4 秒
       setTimeout(() => { setIsSpinning(false); }, 4000);
     }
     if (!match?.show_lottery) {
@@ -177,7 +170,8 @@ export default function StageScreenPage() {
     if (!email) return '';
     const [name, domain] = email.split('@');
     if (!domain) return email;
-    return `${name.substring(0, 3)}***@${domain}`;
+    if (name.length <= 3) return `${name}***@${domain}`;
+    return `${name.substring(0, 3)}***${name.substring(6)}@${domain}`;
   };
 
   const currentWinners = match.lottery_winners?.slice(lotteryPage * 3, (lotteryPage * 3) + 3) || [];
@@ -205,8 +199,9 @@ export default function StageScreenPage() {
               <motion.div animate={{ x: [-20, 20, -20], y: [-10, 10, -10], scale: [1, 1.05, 1], opacity: [0.3, 0.5, 0.3] }} transition={{ duration: 40, repeat: Infinity, ease: 'easeInOut' }} className="absolute top-[-10%] left-[-10%] w-[1200px] h-[1200px] mix-blend-screen" style={{ backgroundImage: "url('/cloud-left.png')", backgroundSize: 'contain', backgroundRepeat: 'no-repeat', backgroundPosition: 'center', filter: 'blur(5px)' }} />
               <motion.div animate={{ x: [30, -30, 30], y: [15, -15, 15], scale: [1.1, 0.95, 1.1], opacity: [0.2, 0.4, 0.2] }} transition={{ duration: 50, repeat: Infinity, ease: 'easeInOut' }} className="absolute bottom-[-10%] right-[0%] w-[1000px] h-[1000px] mix-blend-screen" style={{ backgroundImage: "url('/cloud-left.png')", backgroundSize: 'contain', backgroundRepeat: 'no-repeat', backgroundPosition: 'center', filter: 'blur(10px)' }} />
             </div>
-            {/* 天空數字 30% 透明度 */}
+            
             <div className="absolute left-[5%] top-[8%] text-[450px] font-black italic text-blue-300/30 leading-none pointer-events-none z-0 tracking-tighter drop-shadow-[0_0_30px_rgba(96,165,250,0.4)]">{p1Int}</div>
+            
             <div className="absolute inset-0 z-10 overflow-hidden pt-10" style={{ clipPath: 'polygon(0 0, 100% 0, calc(100% - 100px) 100%, 0 100%)' }}>
               {match.p1_avatar && <img src={match.p1_avatar} style={{ transform: `translate(${match.p1_x - 50}%, ${match.p1_y - 50}%) scale(${match.p1_size / 100})`, transformOrigin: 'center center' }} className="absolute w-[900px] h-[900px] object-contain max-w-none drop-shadow-[0_20px_40px_rgba(0,0,0,0.8)]" alt={match.p1_name} />}
             </div>
@@ -230,8 +225,9 @@ export default function StageScreenPage() {
               <motion.div animate={{ x: [20, -20, 20], y: [10, -10, 10], scale: [1, 1.05, 1], opacity: [0.3, 0.5, 0.3] }} transition={{ duration: 40, repeat: Infinity, ease: 'easeInOut' }} className="absolute top-[-5%] right-[-10%] w-[1200px] h-[1200px] mix-blend-screen" style={{ backgroundImage: "url('/cloud-right.png')", backgroundSize: 'contain', backgroundRepeat: 'no-repeat', backgroundPosition: 'center', filter: 'blur(5px)' }} />
               <motion.div animate={{ x: [-30, 30, -30], y: [-15, 15, -15], scale: [1.1, 0.95, 1.1], opacity: [0.2, 0.4, 0.2] }} transition={{ duration: 50, repeat: Infinity, ease: 'easeInOut' }} className="absolute bottom-[-10%] left-[0%] w-[1000px] h-[1000px] mix-blend-screen" style={{ backgroundImage: "url('/cloud-right.png')", backgroundSize: 'contain', backgroundRepeat: 'no-repeat', backgroundPosition: 'center', filter: 'blur(10px)' }} />
             </div>
-            {/* 天空數字 30% 透明度 */}
+            
             <div className="absolute right-[5%] top-[8%] text-[450px] font-black italic text-red-400/30 leading-none pointer-events-none z-0 tracking-tighter drop-shadow-[0_0_30px_rgba(248,113,113,0.4)]">{p2Int}</div>
+            
             <div className="absolute inset-0 z-10 overflow-hidden pt-10" style={{ clipPath: 'polygon(100px 0, 100% 0, 100% 100%, 0 100%)' }}>
               {match.p2_avatar && <img src={match.p2_avatar} style={{ transform: `translate(${match.p2_x - 50}%, ${match.p2_y - 50}%) scale(${match.p2_size / 100})`, transformOrigin: 'center center' }} className="absolute w-[900px] h-[900px] object-contain max-w-none drop-shadow-[0_20px_40px_rgba(0,0,0,0.8)]" alt={match.p2_name} />}
             </div>
@@ -272,7 +268,7 @@ export default function StageScreenPage() {
           </motion.div>
         )}
 
-        {/* 🏆 抽獎揭曉畫面 */}
+        {/* 🏆 抽獎畫面 */}
         <AnimatePresence>
           {match.show_lottery && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 z-50 bg-black/85 backdrop-blur-lg flex flex-col items-center justify-center font-sans overflow-hidden">
