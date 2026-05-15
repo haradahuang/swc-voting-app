@@ -95,7 +95,7 @@ export default function StageScreenPage() {
   if (!match) return <div className="min-h-screen bg-black" />;
 
   const total = match.p1_votes + match.p2_votes;
-  // 💡 修復了這裡的 ?designDesign50 亂碼
+  // 💡 修復了這裡的 ?designDesign50 亂碼亂碼
   const p1Rate = total === 0 ? 50 : (match.p1_votes / total) * 100;
   const p2Rate = total === 0 ? 50 : (match.p2_votes / total) * 100;
   const [p1Int, p1Dec] = p1Rate.toFixed(1).split('.');
@@ -120,7 +120,7 @@ export default function StageScreenPage() {
     // 💡 外層容器：確保螢幕背景為黑，並將內部等比例置中
     <div className="h-screen w-screen bg-black flex items-center justify-center overflow-hidden">
       
-      {/* 💡 縮放畫布：鎖定 1920x1080 並進行 transform 縮放 */}
+      {/* 💡 縮放畫布：鎖定 1920x1080 並進行 transform 縮放 縮放 鎖定像素寬度 53vw 換算 */}
       <div 
         style={{
           width: '1920px',
@@ -144,14 +144,14 @@ export default function StageScreenPage() {
             className="absolute inset-0 bg-gradient-to-br from-[#0c246b] via-[#040d2b] to-[#01020a]" 
             style={{ clipPath: 'polygon(0 0, calc(100% - 4px) 0, calc(85% - 4px) 100%, 0 100%)' }}
           >
-            {/* ☁️ 實體藍色環境光暈 */}
+            {/* ☁️ 💡 實體藍色環境光暈 (墊在雲朵下方 保證發光明顯) */}
             <motion.div 
               animate={{ opacity: [0.5, 0.8, 0.5], scale: [1, 1.1, 1] }} 
               transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }}
               className="absolute top-[10%] left-[-5%] w-[1100px] h-[1100px] bg-blue-500/50 rounded-full blur-[150px] mix-blend-screen pointer-events-none z-0"
             />
 
-            {/* ☁️ 羽化雲霧硬邊 (使用 Mask) */}
+            {/* ☁️ 💡 修正 2：羽化雲霧硬邊痕跡 (使用 Mask) */}
             <div 
               className="absolute inset-0 overflow-hidden z-0 pointer-events-none"
               style={{ WebkitMaskImage: 'radial-gradient(ellipse 80% 80% at 40% 50%, rgba(0,0,0,1) 40%, rgba(0,0,0,0) 100%)' }}
@@ -163,17 +163,17 @@ export default function StageScreenPage() {
                 className="absolute top-[20%] left-[-10%] w-[1000px] h-[1000px] bg-blue-600/40 rounded-full blur-[120px] mix-blend-screen"
               />
               
-              {/* 前景雲 */}
+              {/* 💡 統一動畫：前景雲 */}
               <motion.div
-                animate={{ x: [-50, 50, -50], y: [-20, 20, -20], scale: [1, 1.15, 1], opacity: [0.15, 0.3, 0.15] }}
-                transition={{ duration: 18, repeat: Infinity, ease: 'easeInOut' }}
+                animate={{ x: [-20, 20, -20], y: [-10, 10, -10], scale: [1, 1.05, 1], opacity: [0.3, 0.5, 0.3] }} // 💡 降低幅度，時間變慢 (duration: 40)
+                transition={{ duration: 40, repeat: Infinity, ease: 'easeInOut' }}
                 className="absolute top-[-10%] left-[-10%] w-[1200px] h-[1200px] mix-blend-screen"
                 style={{ backgroundImage: "url('/cloud-left.png')", backgroundSize: 'contain', backgroundRepeat: 'no-repeat', backgroundPosition: 'center', filter: 'blur(5px)' }}
               />
-              {/* 後景雲 */}
+              {/* 💡 統一動畫：後景雲 */}
               <motion.div
-                animate={{ x: [60, -60, 60], y: [30, -30, 30], scale: [1.2, 0.9, 1.2], opacity: [0.1, 0.2, 0.1] }}
-                transition={{ duration: 25, repeat: Infinity, ease: 'easeInOut' }}
+                animate={{ x: [30, -30, 30], y: [15, -15, 15], scale: [1.1, 0.95, 1.1], opacity: [0.2, 0.4, 0.2] }} // 💡 降低幅度，時間變慢 (duration: 50)
+                transition={{ duration: 50, repeat: Infinity, ease: 'easeInOut' }}
                 className="absolute bottom-[-10%] right-[0%] w-[1000px] h-[1000px] mix-blend-screen"
                 style={{ backgroundImage: "url('/cloud-left.png')", backgroundSize: 'contain', backgroundRepeat: 'no-repeat', backgroundPosition: 'center', filter: 'blur(10px)' }}
               />
@@ -183,7 +183,7 @@ export default function StageScreenPage() {
               {p1Int}
             </div>
 
-            {/* 選手下方遮罩 (通過 overflow Hidden) */}
+            {/* 💡 修正 3：選手下方遮罩 (通過 overflow Hidden) */}
             <div className="absolute inset-0 z-10 overflow-hidden pt-10" style={{ clipPath: 'polygon(0 0, 100% 0, calc(100% - 100px) 100%, 0 100%)' }}>
               {match.p1_avatar && (
                 <img src={match.p1_avatar} style={{ transform: `translate(${match.p1_x - 50}%, ${match.p1_y - 50}%) scale(${match.p1_size / 100})`, transformOrigin: 'center center' }} className="absolute w-[900px] h-[900px] object-contain max-w-none drop-shadow-[0_20px_40px_rgba(0,0,0,0.8)]" alt={match.p1_name} />
@@ -213,7 +213,7 @@ export default function StageScreenPage() {
             className="absolute inset-0 bg-gradient-to-bl from-[#6b0c15] via-[#2b0407] to-[#080102]"
             style={{ clipPath: 'polygon(calc(15% + 4px) 0, 100% 0, 100% 100%, 4px 100%)' }}
           >
-            {/* ☁️ 實體紅色環境光暈 */}
+            {/* ☁️ 💡 實體紅色環境光暈 (墊在雲朵下方 保證發光明顯) */}
             <motion.div 
               animate={{ opacity: [0.5, 0.8, 0.5], scale: [1, 1.1, 1] }} 
               transition={{ duration: 9, repeat: Infinity, ease: 'easeInOut' }}
@@ -229,17 +229,17 @@ export default function StageScreenPage() {
                 className="absolute top-[20%] right-[-10%] w-[1000px] h-[1000px] bg-red-600/40 rounded-full blur-[120px] mix-blend-screen"
               />
 
-              {/* 前景雲 */}
+              {/* 💡 統一動畫：前景雲 */}
               <motion.div
-                animate={{ x: [50, -50, 50], y: [20, -20, 20], scale: [1, 1.15, 1], opacity: [0.15, 0.3, 0.15] }}
-                transition={{ duration: 19, repeat: Infinity, ease: 'easeInOut' }}
+                animate={{ x: [20, -20, 20], y: [10, -10, 10], scale: [1, 1.05, 1], opacity: [0.3, 0.5, 0.3] }} // 💡 方向相反，但幅度、時間相同相同 (duration: 40)
+                transition={{ duration: 40, repeat: Infinity, ease: 'easeInOut' }}
                 className="absolute top-[-5%] right-[-10%] w-[1200px] h-[1200px] mix-blend-screen"
                 style={{ backgroundImage: "url('/cloud-right.png')", backgroundSize: 'contain', backgroundRepeat: 'no-repeat', backgroundPosition: 'center', filter: 'blur(5px)' }}
               />
-              {/* 後景雲 */}
+              {/* 💡 統一動畫：後景雲 */}
               <motion.div
-                animate={{ x: [-60, 60, -60], y: [-30, 30, -30], scale: [1.2, 0.9, 1.2], opacity: [0.1, 0.2, 0.1] }}
-                transition={{ duration: 24, repeat: Infinity, ease: 'easeInOut' }}
+                animate={{ x: [-30, 30, -30], y: [-15, 15, -15], scale: [1.1, 0.95, 1.1], opacity: [0.2, 0.4, 0.2] }} // 💡 方向相反，但幅度、時間相同相同 (duration: 50)
+                transition={{ duration: 50, repeat: Infinity, ease: 'easeInOut' }}
                 className="absolute bottom-[-10%] left-[0%] w-[1000px] h-[1000px] mix-blend-screen"
                 style={{ backgroundImage: "url('/cloud-right.png')", backgroundSize: 'contain', backgroundRepeat: 'no-repeat', backgroundPosition: 'center', filter: 'blur(10px)' }}
               />
@@ -249,7 +249,7 @@ export default function StageScreenPage() {
               {p2Int}
             </div>
 
-            {/* 選手下方遮罩 (通過 overflow Hidden) */}
+            {/* 💡 修正 3：選手下方遮罩 (通過 overflow Hidden) */}
             <div className="absolute inset-0 z-10 overflow-hidden pt-10" style={{ clipPath: 'polygon(100px 0, 100% 0, 100% 100%, 0 100%)' }}>
               {match.p2_avatar && (
                 <img src={match.p2_avatar} style={{ transform: `translate(${match.p2_x - 50}%, ${match.p2_y - 50}%) scale(${match.p2_size / 100})`, transformOrigin: 'center center' }} className="absolute w-[900px] h-[900px] object-contain max-w-none drop-shadow-[0_20px_40px_rgba(0,0,0,0.8)]" alt={match.p2_name} />
@@ -294,6 +294,7 @@ export default function StageScreenPage() {
           </div>
         </div>
 
+        {/* VS 改為金色外圈標誌 */}
         {!match.show_lottery && originUrl && (
           <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 1 }} className="absolute bottom-[38%] right-[3%] z-40 bg-black/90 backdrop-blur-xl p-4 rounded-3xl border border-red-900/60 shadow-[0_0_50px_rgba(0,0,0,0.9)] flex flex-col items-center">
             <div className="flex items-center gap-2 mb-3"><div className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></div><h3 className="text-white font-bold text-[11px] tracking-[0.2em] uppercase">Scan To Vote</h3></div>
