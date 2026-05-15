@@ -18,7 +18,7 @@ export default function StageScreenPage() {
   const [spinningNames, setSpinningNames] = useState<string[]>([]);
   const [lotteryPage, setLotteryPage] = useState(0);
 
-  // 💡 音效 Refs
+  // 音效 Refs
   const voteBgmRef = useRef<HTMLAudioElement | null>(null);
   const springBgmRef = useRef<HTMLAudioElement | null>(null);
   const winBgmRef = useRef<HTMLAudioElement | null>(null);
@@ -45,17 +45,22 @@ export default function StageScreenPage() {
     };
   }, []);
 
-  // 手動/點擊畫面啟動音效
-  const handleEnableAudio = () => {
+  // 💡 修正 1：左下方純圖示音效開關邏輯
+  const handleToggleAudio = () => {
     if (!audioEnabled) {
       setAudioEnabled(true);
       if (!match?.show_lottery) {
         voteBgmRef.current?.play().catch(() => console.log("音訊啟動失敗"));
       }
+    } else {
+      setAudioEnabled(false);
+      voteBgmRef.current?.pause();
+      springBgmRef.current?.pause();
+      winBgmRef.current?.pause();
     }
   };
 
-  // 💡 音效控制邏輯 (必須在 audioEnabled 為 true 後才執行播放)
+  // 音效控制邏輯
   useEffect(() => {
     if (!match || !audioEnabled) return;
 
@@ -81,13 +86,13 @@ export default function StageScreenPage() {
         // 正在捲動名單：播放 spring.mp3
         springBgmRef.current?.play().catch(() => {});
       } else {
-        // 💡 修正 2：名單公布後，延遲 4500ms 播放 win.mp3
+        // 💡 修正 3：名單公布後，延遲 3800ms 播放 win.mp3
         if (winTimeoutRef.current) clearTimeout(winTimeoutRef.current);
         winTimeoutRef.current = setTimeout(() => {
           if (match.show_lottery) {
             winBgmRef.current?.play().catch(() => {});
           }
-        }, 4500); // 4.5秒
+        }, 3800); // 3.8秒
       }
     }
   }, [match?.show_lottery, isSpinning, match, audioEnabled]);
@@ -143,7 +148,7 @@ export default function StageScreenPage() {
     let interval: any;
     if (isSpinning && realVoters.length > 0) {
       interval = setInterval(() => {
-        // 💡 修正 1：隨機產生 4 個假名字用於滾動動畫
+        // 隨機產生 4 個假名字用於滾動動畫
         const dummy = Array(4).fill(0).map(() => realVoters[Math.floor(Math.random() * realVoters.length)]);
         setSpinningNames(dummy);
       }, 80);
@@ -155,7 +160,6 @@ export default function StageScreenPage() {
     if (match?.show_lottery && !isSpinning && match.lottery_winners?.length > 4) {
       const interval = setInterval(() => {
         setLotteryPage((prev) => {
-          // 💡 修正 1：改為 4 人一頁
           const totalPages = Math.ceil(match.lottery_winners.length / 4);
           return (prev + 1) % totalPages;
         });
@@ -184,24 +188,21 @@ export default function StageScreenPage() {
     return `${name.substring(0, 3)}***@${domain}`;
   };
 
-  // 💡 修正 1：確保每頁擷取 4 人
   const currentWinners = match.lottery_winners?.slice(lotteryPage * 4, (lotteryPage * 4) + 4) || [];
 
   return (
     <div 
       className="h-screen w-screen bg-black flex items-center justify-center overflow-hidden cursor-default"
-      onClick={handleEnableAudio} // 💡 點擊畫面任意處即可啟用音效
+      onClick={() => { if (!audioEnabled) handleToggleAudio() }} 
     >
       
-      {/* 💡 修正 3：左上角音訊啟動按鈕 */}
-      {!audioEnabled && (
-        <button 
-          onClick={handleEnableAudio}
-          className="absolute top-6 left-6 z-50 flex items-center gap-2 px-5 py-2 rounded-full bg-white/10 hover:bg-white/20 text-white/60 hover:text-white transition-all backdrop-blur-md border border-white/10 text-sm font-bold tracking-widest"
-        >
-          🔇 點擊啟用音效
-        </button>
-      )}
+      {/* 💡 修正 1：左下方純圖示音效按鈕 */}
+      <button 
+        onClick={(e) => { e.stopPropagation(); handleToggleAudio(); }}
+        className="absolute bottom-8 left-8 z-50 flex items-center justify-center w-14 h-14 rounded-full bg-white/10 hover:bg-white/20 text-white/70 hover:text-white transition-all backdrop-blur-md border border-white/10 text-2xl shadow-lg"
+      >
+        {audioEnabled ? '🔊' : '🔇'}
+      </button>
 
       <div 
         style={{
@@ -223,7 +224,6 @@ export default function StageScreenPage() {
             <div className="absolute inset-0 overflow-hidden z-0 pointer-events-none" style={{ WebkitMaskImage: 'radial-gradient(ellipse 80% 80% at 40% 50%, rgba(0,0,0,1) 40%, rgba(0,0,0,0) 100%)' }}>
               <motion.div animate={{ opacity: [0.4, 0.7, 0.4], scale: [1, 1.1, 1] }} transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }} className="absolute top-[20%] left-[-10%] w-[1000px] h-[1000px] bg-blue-600/40 rounded-full blur-[120px] mix-blend-screen" />
               
-              {/* 💡 修正 4：左側雲朵動態幅度增加 [-35, 35] */}
               <motion.div animate={{ x: [-35, 35, -35], y: [-15, 15, -15], scale: [1, 1.05, 1], opacity: [0.3, 0.5, 0.3] }} transition={{ duration: 40, repeat: Infinity, ease: 'easeInOut' }} className="absolute top-[-10%] left-[-10%] w-[1200px] h-[1200px] mix-blend-screen" style={{ backgroundImage: "url('/cloud-left.png')", backgroundSize: 'contain', backgroundRepeat: 'no-repeat', backgroundPosition: 'center', filter: 'blur(5px)' }} />
               <motion.div animate={{ x: [45, -45, 45], y: [20, -20, 20], scale: [1.1, 0.95, 1.1], opacity: [0.2, 0.4, 0.2] }} transition={{ duration: 50, repeat: Infinity, ease: 'easeInOut' }} className="absolute bottom-[-10%] right-[0%] w-[1000px] h-[1000px] mix-blend-screen" style={{ backgroundImage: "url('/cloud-left.png')", backgroundSize: 'contain', backgroundRepeat: 'no-repeat', backgroundPosition: 'center', filter: 'blur(10px)' }} />
             </div>
@@ -254,7 +254,6 @@ export default function StageScreenPage() {
             <div className="absolute inset-0 overflow-hidden z-0 pointer-events-none">
               <motion.div animate={{ opacity: [0.4, 0.7, 0.4], scale: [1, 1.1, 1] }} transition={{ duration: 9, repeat: Infinity, ease: 'easeInOut' }} className="absolute top-[20%] right-[-10%] w-[1000px] h-[1000px] bg-red-600/40 rounded-full blur-[120px] mix-blend-screen" />
               
-              {/* 💡 修正 4：右側雲朵動態幅度增加 [35, -35] */}
               <motion.div animate={{ x: [35, -35, 35], y: [15, -15, 15], scale: [1, 1.05, 1], opacity: [0.3, 0.5, 0.3] }} transition={{ duration: 40, repeat: Infinity, ease: 'easeInOut' }} className="absolute top-[-5%] right-[-10%] w-[1200px] h-[1200px] mix-blend-screen" style={{ backgroundImage: "url('/cloud-right.png')", backgroundSize: 'contain', backgroundRepeat: 'no-repeat', backgroundPosition: 'center', filter: 'blur(5px)' }} />
               <motion.div animate={{ x: [-45, 45, -45], y: [-20, 20, -20], scale: [1.1, 0.95, 1.1], opacity: [0.2, 0.4, 0.2] }} transition={{ duration: 50, repeat: Infinity, ease: 'easeInOut' }} className="absolute bottom-[-10%] left-[0%] w-[1000px] h-[1000px] mix-blend-screen" style={{ backgroundImage: "url('/cloud-right.png')", backgroundSize: 'contain', backgroundRepeat: 'no-repeat', backgroundPosition: 'center', filter: 'blur(10px)' }} />
             </div>
@@ -303,32 +302,29 @@ export default function StageScreenPage() {
           </motion.div>
         )}
 
-        {/* ================= 🏆 抽獎揭曉全畫面 (4 人版) ================= */}
+        {/* ================= 🏆 抽獎揭曉全畫面 ================= */}
         <AnimatePresence>
           {match.show_lottery && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 z-50 bg-black/85 backdrop-blur-lg flex flex-col items-center justify-center font-sans overflow-hidden">
               <motion.div initial={{ scale: 0.9, opacity: 0, y: 30 }} animate={{ scale: 1, opacity: 1, y: 0 }} transition={{ type: "spring", bounce: 0.4 }} className="bg-gradient-to-b from-[#111] to-black border border-yellow-500/30 p-12 rounded-[2rem] shadow-[0_0_100px_rgba(250,204,21,0.2)] relative flex flex-col items-center min-w-[850px]">
                 <h2 className="text-yellow-400 text-6xl font-black italic tracking-[0.3em] uppercase mb-8 drop-shadow-[0_0_20px_rgba(250,204,21,0.6)]">WINNERS</h2>
                 
-                {/* 💡 修正 1：加大高度以容納 4 人 */}
-                <div className="w-full relative min-h-[600px]">
+                {/* 💡 修正 2：使用 Flex-1 讓 4 個名單完美填滿固定高度的容器，不會留白 */}
+                <div className="w-full relative h-[560px]">
                   {isSpinning ? (
-                     <div className="absolute inset-0 w-full flex flex-col items-center justify-start gap-4">
-                       {/* 💡 修正 1：產生 4 個假名單 */}
+                     <div className="absolute inset-0 w-full flex flex-col gap-4">
                        { spinningNames.slice(0, 4).map((name, i) => (
-                         <div key={i} className="bg-zinc-900/50 border border-zinc-700 w-full rounded-2xl py-5 px-10 text-center animate-pulse">
+                         <div key={i} className="bg-zinc-900/50 border border-zinc-700 w-full rounded-2xl flex-1 flex items-center justify-center animate-pulse">
                            <span className="text-5xl font-black text-zinc-400 tracking-widest blur-[1px]">{name}</span>
                          </div>
                        ))}
                      </div>
                   ) : (
                      <AnimatePresence mode="wait">
-                       <motion.div key={lotteryPage} initial={{ opacity: 0, x: 50 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -50 }} transition={{ duration: 0.3 }} className="absolute inset-0 w-full flex flex-col items-center justify-start gap-4 overflow-hidden">
-                         {/* 💡 修正 1：渲染 4 個真實中獎者 */}
+                       <motion.div key={lotteryPage} initial={{ opacity: 0, x: 50 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -50 }} transition={{ duration: 0.3 }} className="absolute inset-0 w-full flex flex-col gap-4 overflow-hidden">
                          {currentWinners.slice(0, 4).map((w: any, idx: number) => (
-                           <div key={idx} className="bg-gradient-to-r from-yellow-900/30 via-yellow-600/20 to-yellow-900/30 border border-yellow-500/40 w-full rounded-2xl py-5 px-10 flex flex-col items-center justify-center relative overflow-hidden shadow-lg">
+                           <div key={idx} className="bg-gradient-to-r from-yellow-900/30 via-yellow-600/20 to-yellow-900/30 border border-yellow-500/40 w-full rounded-2xl flex-1 flex flex-col items-center justify-center relative overflow-hidden shadow-lg">
                              <div className="absolute inset-0 bg-yellow-400/5 animate-pulse mix-blend-overlay"></div>
-                             {/* 💡 縮小字體 text-5xl */}
                              <div className="text-5xl font-black text-white tracking-widest drop-shadow-[0_0_15px_rgba(255,255,255,0.6)] z-10 mb-1 truncate max-w-[700px]">{w.user_name}</div>
                              <div className="text-2xl text-yellow-500/80 tracking-widest font-bold z-10">{maskEmail(w.user_email)}</div>
                            </div>
