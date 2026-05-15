@@ -20,12 +20,12 @@ export default function StageScreenPage() {
   const springBgmRef = useRef<HTMLAudioElement | null>(null);
   const winBgmRef = useRef<HTMLAudioElement | null>(null);
 
-  // 💡 初始化音效物件
+  // 初始化音效物件
   useEffect(() => {
     if (typeof window !== 'undefined') {
       voteBgmRef.current = new Audio('/votebgm.mp3');
-      voteBgmRef.current.loop = true; // 投票背景音樂無限輪播
-      voteBgmRef.current.volume = 0.6; // 可依需求調整音量
+      voteBgmRef.current.loop = true;
+      voteBgmRef.current.volume = 0.6;
 
       springBgmRef.current = new Audio('/spring.mp3');
       
@@ -33,63 +33,58 @@ export default function StageScreenPage() {
     }
 
     return () => {
-      // 元件卸載時清除音效
       voteBgmRef.current?.pause();
       springBgmRef.current?.pause();
       winBgmRef.current?.pause();
     };
   }, []);
 
-  // 💡 音效控制核心邏輯
+  // 💡 音效控制邏輯
   useEffect(() => {
     if (!match) return;
 
     if (!match.show_lottery) {
-      // 【投票階段】：關閉所有抽獎音效，播放背景音樂
+      // 【投票階段 / 名單關閉】：停止所有抽獎音效，恢復播放背景音樂
       if (winBgmRef.current) {
         winBgmRef.current.pause();
-        winBgmRef.current.currentTime = 0; // 倒帶
+        winBgmRef.current.currentTime = 0;
       }
       if (springBgmRef.current) {
         springBgmRef.current.pause();
-        springBgmRef.current.currentTime = 0; // 倒帶
+        springBgmRef.current.currentTime = 0;
       }
-      // 嘗試播放 BGM (需注意瀏覽器自動播放政策，需使用者點擊畫面一次)
-      voteBgmRef.current?.play().catch(e => console.log("等待使用者點擊畫面以允許播放音樂"));
+      voteBgmRef.current?.play().catch(() => {});
       
     } else {
-      // 【抽獎階段】：暫停背景音樂
+      // 【抽獎階段】：停止背景音樂
       voteBgmRef.current?.pause();
 
       if (isSpinning) {
-        // 正在滾動名單 (6秒)
-        springBgmRef.current?.play().catch(e => console.log("音效播放被阻擋"));
+        // 正在 4 秒倒數捲動中：播放 spring.mp3
+        springBgmRef.current?.play().catch(() => {});
       } else {
-        // 滾動結束，揭曉贏家
+        // 💡 捲動結束 (公布名單)：停止 spring，開始播放 win.mp3
         if (springBgmRef.current) {
           springBgmRef.current.pause();
           springBgmRef.current.currentTime = 0;
         }
-        winBgmRef.current?.play().catch(e => console.log("音效播放被阻擋"));
+        winBgmRef.current?.play().catch(() => {});
       }
     }
   }, [match?.show_lottery, isSpinning, match]);
 
-  // 自動計算 1920x1080 縮放比例
+  // 自動計算 1920x1080 縮放比例 (方法 B)
   useLayoutEffect(() => {
     const handleResize = () => {
       const designWidth = 1920;
       const designHeight = 1080;
       const windowWidth = window.innerWidth;
       const windowHeight = window.innerHeight;
-      
       const scaleX = windowWidth / designWidth;
       const scaleY = windowHeight / designHeight;
       const newScale = Math.min(scaleX, scaleY);
-      
       setScale(newScale);
     };
-
     window.addEventListener('resize', handleResize);
     handleResize(); 
     return () => window.removeEventListener('resize', handleResize);
@@ -101,12 +96,10 @@ export default function StageScreenPage() {
       supabase.from('active_match').select('*').eq('is_active', true).single().then(({ data }) => setMatch(data));
     };
     fetchMatch();
-    
     const channel = supabase.channel('realtime-screen')
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'active_match' }, (p) => {
         if (p.new.is_active) setMatch(p.new);
       }).subscribe();
-      
     return () => { supabase.removeChannel(channel); };
   }, []);
 
@@ -118,8 +111,8 @@ export default function StageScreenPage() {
         const names = data?.map(d => d.user_name) || [];
         setRealVoters(names.length > 0 ? names : ['Lucky Winner', 'Player', 'Vote User']);
       });
-      // 💡 為了配合 spring.mp3 的 6 秒長度，將 3000 改為 6000
-      setTimeout(() => { setIsSpinning(false); }, 6000);
+      // 💡 抽獎秒數改為 4 秒 (4000ms)
+      setTimeout(() => { setIsSpinning(false); }, 4000);
     }
     if (!match?.show_lottery) {
       setHasSpun(false);
@@ -188,27 +181,21 @@ export default function StageScreenPage() {
       >
         <div className="absolute inset-0 z-0 bg-gradient-to-br from-[#0c246b] via-[#040d2b] to-[#01020a]"></div>
 
-        {/* ================= 🔵 左半部：藍方 ================= */}
+        {/* 左半部 */}
         <div className="absolute left-0 top-0 h-full w-[1018px] z-10 shadow-[0_0_50px_rgba(37,99,235,0.4)]" style={{ clipPath: 'polygon(0 0, 100% 0, 85% 100%, 0 100%)' }}>
           <div className="absolute inset-0 bg-gradient-to-br from-[#0c246b] via-[#040d2b] to-[#01020a]" style={{ clipPath: 'polygon(0 0, calc(100% - 4px) 0, calc(85% - 4px) 100%, 0 100%)' }}>
             <motion.div animate={{ opacity: [0.5, 0.8, 0.5], scale: [1, 1.1, 1] }} transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }} className="absolute top-[10%] left-[-5%] w-[1100px] h-[1100px] bg-blue-500/50 rounded-full blur-[150px] mix-blend-screen pointer-events-none z-0" />
-
             <div className="absolute inset-0 overflow-hidden z-0 pointer-events-none" style={{ WebkitMaskImage: 'radial-gradient(ellipse 80% 80% at 40% 50%, rgba(0,0,0,1) 40%, rgba(0,0,0,0) 100%)' }}>
               <motion.div animate={{ opacity: [0.4, 0.7, 0.4], scale: [1, 1.1, 1] }} transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }} className="absolute top-[20%] left-[-10%] w-[1000px] h-[1000px] bg-blue-600/40 rounded-full blur-[120px] mix-blend-screen" />
-              
               <motion.div animate={{ x: [-20, 20, -20], y: [-10, 10, -10], scale: [1, 1.05, 1], opacity: [0.3, 0.5, 0.3] }} transition={{ duration: 40, repeat: Infinity, ease: 'easeInOut' }} className="absolute top-[-10%] left-[-10%] w-[1200px] h-[1200px] mix-blend-screen" style={{ backgroundImage: "url('/cloud-left.png')", backgroundSize: 'contain', backgroundRepeat: 'no-repeat', backgroundPosition: 'center', filter: 'blur(5px)' }} />
               <motion.div animate={{ x: [30, -30, 30], y: [15, -15, 15], scale: [1.1, 0.95, 1.1], opacity: [0.2, 0.4, 0.2] }} transition={{ duration: 50, repeat: Infinity, ease: 'easeInOut' }} className="absolute bottom-[-10%] right-[0%] w-[1000px] h-[1000px] mix-blend-screen" style={{ backgroundImage: "url('/cloud-left.png')", backgroundSize: 'contain', backgroundRepeat: 'no-repeat', backgroundPosition: 'center', filter: 'blur(10px)' }} />
             </div>
-
-            {/* 💡 修改為 /30 透明度 */}
+            {/* 天空數字 30% 透明度 */}
             <div className="absolute left-[5%] top-[8%] text-[450px] font-black italic text-blue-300/30 leading-none pointer-events-none z-0 tracking-tighter drop-shadow-[0_0_30px_rgba(96,165,250,0.4)]">{p1Int}</div>
-
             <div className="absolute inset-0 z-10 overflow-hidden pt-10" style={{ clipPath: 'polygon(0 0, 100% 0, calc(100% - 100px) 100%, 0 100%)' }}>
               {match.p1_avatar && <img src={match.p1_avatar} style={{ transform: `translate(${match.p1_x - 50}%, ${match.p1_y - 50}%) scale(${match.p1_size / 100})`, transformOrigin: 'center center' }} className="absolute w-[900px] h-[900px] object-contain max-w-none drop-shadow-[0_20px_40px_rgba(0,0,0,0.8)]" alt={match.p1_name} />}
             </div>
-
             <div className="absolute bottom-0 left-0 w-full h-[25vh] bg-gradient-to-t from-[#01020a] via-[#01020a]/80 to-transparent z-20"></div>
-
             <div className="absolute bottom-16 w-full flex flex-col items-center pr-[10%] z-30">
               <h2 className={`${nameTextClass} font-black text-white italic tracking-widest drop-shadow-[0_5px_15px_rgba(0,0,0,1)]`}>{match.p1_name}</h2>
               <div className="flex items-baseline gap-6 bg-blue-950/60 px-10 py-3 rounded-3xl border border-blue-500/30 backdrop-blur-md shadow-[0_10px_30px_rgba(0,0,0,0.8)]">
@@ -219,27 +206,21 @@ export default function StageScreenPage() {
           </div>
         </div>
 
-        {/* ================= 🔴 右半部：紅方 ================= */}
+        {/* 右半部 */}
         <div className="absolute right-0 top-0 h-full w-[1018px] bg-[#2e0509] z-10 shadow-[0_0_50px_rgba(220,38,38,0.4)]" style={{ clipPath: 'polygon(15% 0, 100% 0, 100% 100%, 0 100%)' }}>
           <div className="absolute inset-0 bg-gradient-to-bl from-[#6b0c15] via-[#2b0407] to-[#080102]" style={{ clipPath: 'polygon(calc(15% + 4px) 0, 100% 0, 100% 100%, 4px 100%)' }}>
             <motion.div animate={{ opacity: [0.5, 0.8, 0.5], scale: [1, 1.1, 1] }} transition={{ duration: 9, repeat: Infinity, ease: 'easeInOut' }} className="absolute top-[10%] right-[-5%] w-[1100px] h-[1100px] bg-red-500/50 rounded-full blur-[150px] mix-blend-screen pointer-events-none z-0" />
-
             <div className="absolute inset-0 overflow-hidden z-0 pointer-events-none">
               <motion.div animate={{ opacity: [0.4, 0.7, 0.4], scale: [1, 1.1, 1] }} transition={{ duration: 9, repeat: Infinity, ease: 'easeInOut' }} className="absolute top-[20%] right-[-10%] w-[1000px] h-[1000px] bg-red-600/40 rounded-full blur-[120px] mix-blend-screen" />
-
               <motion.div animate={{ x: [20, -20, 20], y: [10, -10, 10], scale: [1, 1.05, 1], opacity: [0.3, 0.5, 0.3] }} transition={{ duration: 40, repeat: Infinity, ease: 'easeInOut' }} className="absolute top-[-5%] right-[-10%] w-[1200px] h-[1200px] mix-blend-screen" style={{ backgroundImage: "url('/cloud-right.png')", backgroundSize: 'contain', backgroundRepeat: 'no-repeat', backgroundPosition: 'center', filter: 'blur(5px)' }} />
               <motion.div animate={{ x: [-30, 30, -30], y: [-15, 15, -15], scale: [1.1, 0.95, 1.1], opacity: [0.2, 0.4, 0.2] }} transition={{ duration: 50, repeat: Infinity, ease: 'easeInOut' }} className="absolute bottom-[-10%] left-[0%] w-[1000px] h-[1000px] mix-blend-screen" style={{ backgroundImage: "url('/cloud-right.png')", backgroundSize: 'contain', backgroundRepeat: 'no-repeat', backgroundPosition: 'center', filter: 'blur(10px)' }} />
             </div>
-
-            {/* 💡 修改為 /30 透明度 */}
+            {/* 天空數字 30% 透明度 */}
             <div className="absolute right-[5%] top-[8%] text-[450px] font-black italic text-red-400/30 leading-none pointer-events-none z-0 tracking-tighter drop-shadow-[0_0_30px_rgba(248,113,113,0.4)]">{p2Int}</div>
-
             <div className="absolute inset-0 z-10 overflow-hidden pt-10" style={{ clipPath: 'polygon(100px 0, 100% 0, 100% 100%, 0 100%)' }}>
               {match.p2_avatar && <img src={match.p2_avatar} style={{ transform: `translate(${match.p2_x - 50}%, ${match.p2_y - 50}%) scale(${match.p2_size / 100})`, transformOrigin: 'center center' }} className="absolute w-[900px] h-[900px] object-contain max-w-none drop-shadow-[0_20px_40px_rgba(0,0,0,0.8)]" alt={match.p2_name} />}
             </div>
-
             <div className="absolute bottom-0 left-0 w-full h-[25vh] bg-gradient-to-t from-[#080102] via-[#080102]/80 to-transparent z-20"></div>
-
             <div className="absolute bottom-16 w-full flex flex-col items-center pl-[10%] z-30">
               <h2 className={`${nameTextClass} font-black text-white italic tracking-widest drop-shadow-[0_5px_15px_rgba(0,0,0,1)]`}>{match.p2_name}</h2>
               <div className="flex items-baseline gap-6 bg-red-950/60 px-10 py-3 rounded-3xl border border-red-500/30 backdrop-blur-md shadow-[0_10px_30px_rgba(0,0,0,0.8)] flex-row-reverse">
@@ -250,7 +231,7 @@ export default function StageScreenPage() {
           </div>
         </div>
 
-        {/* ================= ⚔️ 畫面頂層 UI ================= */}
+        {/* 頂層線條與 UI */}
         <div className="absolute left-0 top-0 h-full w-[1018px] z-20 pointer-events-none" style={{ filter: 'drop-shadow(0 0 15px #003cff)' }}>
           <div className="absolute left-0 top-0 h-full w-full bg-[#003cff]" style={{ clipPath: 'polygon(calc(100% - 4px) 0, 100% 0, 85% 100%, calc(85% - 4px) 100%)' }}></div>
         </div>
@@ -276,7 +257,7 @@ export default function StageScreenPage() {
           </motion.div>
         )}
 
-        {/* ================= 🏆 抽獎揭曉全畫面 ================= */}
+        {/* 🏆 抽獎畫面 */}
         <AnimatePresence>
           {match.show_lottery && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 z-50 bg-black/85 backdrop-blur-lg flex flex-col items-center justify-center font-sans overflow-hidden">
