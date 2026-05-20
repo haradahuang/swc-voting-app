@@ -1,9 +1,18 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
-import { Save, RotateCcw, MonitorPlay, Tv, Radio, Power, Trophy, Users, MonitorUp, MonitorOff } from 'lucide-react';
+import { Save, RotateCcw, MonitorPlay, Tv, Radio, Power, Trophy, Users, MonitorUp, MonitorOff, Lock, LogOut } from 'lucide-react';
+
+// 💡 登入帳密設定 (請在此修改)
+const ADMIN_USERNAME = 'admin';
+const ADMIN_PASSWORD = '1234';
 
 export default function AdminPage() {
+  // 💡 登入狀態管理
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [usernameInput, setUsernameInput] = useState('');
+  const [passwordInput, setPasswordInput] = useState('');
+
   const [match, setMatch] = useState<any>(null);
   const [uploading, setUploading] = useState(false);
   const [editMode, setEditMode] = useState<'screen' | 'stream'>('screen');
@@ -14,14 +23,31 @@ export default function AdminPage() {
   const [winners, setWinners] = useState<any[]>([]);
   const [isDrawing, setIsDrawing] = useState(false);
 
+  // 💡 切換賽事時重新抓取資料 (移除強制清空 winners 的邏輯)
   useEffect(() => {
-    fetchMatch(currentMatchId);
-    setWinners([]); 
-  }, [currentMatchId]);
+    if (isAuthenticated) {
+      fetchMatch(currentMatchId);
+    }
+  }, [currentMatchId, isAuthenticated]);
+
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (usernameInput === ADMIN_USERNAME && passwordInput === ADMIN_PASSWORD) {
+      setIsAuthenticated(true);
+    } else {
+      alert('❌ 帳號或密碼錯誤');
+    }
+  };
 
   const fetchMatch = async (id: number) => {
     const { data } = await supabase.from('active_match').select('*').eq('id', id).single();
     setMatch(data);
+    // 💡 修正 2：從資料庫讀取已儲存的抽獎名單，確保切換賽事時保留紀錄
+    if (data?.lottery_winners) {
+      setWinners(data.lottery_winners);
+    } else {
+      setWinners([]);
+    }
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, playerKey: 'p1' | 'p2') => {
@@ -63,6 +89,33 @@ export default function AdminPage() {
     setMatch({ ...match, is_voting_open: newState });
   };
 
+  // 💡 修正 3：核彈級徹底歸零函數
+  const handleDeepReset = async () => {
+    const confirmReset = window.confirm('⚠️ 警告：這將會清除目前賽事的所有票數、得獎名單，並且「刪除玩家投票紀錄」(玩家可以重新投票)。確定要徹底歸零嗎？');
+    if (!confirmReset) return;
+
+    try {
+      // 1. 刪除該賽事的所有玩家投票紀錄 (解鎖重複投票限制)
+      await supabase.from('user_votes').delete().eq('match_id', currentMatchId);
+      
+      // 2. 清空票數與抽獎名單，關閉大螢幕抽獎畫面
+      await supabase.from('active_match').update({ 
+        p1_votes: 0, 
+        p2_votes: 0,
+        show_lottery: false,
+        lottery_winners: []
+      }).eq('id', currentMatchId);
+
+      // 3. 更新本地狀態
+      setWinners([]);
+      fetchMatch(currentMatchId);
+      alert('✅ 賽事已徹底歸零，玩家現在可以重新對此賽事投票了！');
+    } catch (error) {
+      console.error(error);
+      alert('歸零發生錯誤，請查看系統日誌');
+    }
+  };
+
   const handleLuckyDraw = async () => {
     setIsDrawing(true);
     setWinners([]);
@@ -73,7 +126,7 @@ export default function AdminPage() {
     const { data, error } = await query;
     setTimeout(() => {
       if (error || !data || data.length === 0) {
-        alert('該賽事目前沒有符合條件的玩家！請確認是否已關閉RLS，或該選項真的沒人投。');
+        alert('該賽事目前沒有符合條件的玩家！請確認選項是否正確。');
       } else {
         const shuffled = data.sort(() => 0.5 - Math.random());
         setWinners(shuffled.slice(0, drawCount));
@@ -82,32 +135,75 @@ export default function AdminPage() {
     }, 800);
   };
 
-  // 💡 推送抽獎結果到螢幕
   const handlePushLottery = async () => {
     await supabase.from('active_match').update({ show_lottery: true, lottery_winners: winners }).eq('id', currentMatchId);
     setMatch({ ...match, show_lottery: true });
     alert('已將抽獎結果發送至大螢幕與直播！');
   };
 
-  // 💡 關閉抽獎畫面
   const handleCloseLottery = async () => {
     await supabase.from('active_match').update({ show_lottery: false }).eq('id', currentMatchId);
     setMatch({ ...match, show_lottery: false });
   };
 
-  if (!match) return <div className="p-10 text-white">Loading...</div>;
+  // 💡 修正 1：未登入時顯示登入畫面
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-zinc-950 flex flex-col items-center justify-center p-6 font-sans">
+        <div className="bg-zinc-900 border border-zinc-800 p-8 rounded-[2rem] w-full max-w-sm shadow-[0_0_50px_rgba(0,0,0,0.5)]">
+          <div className="flex flex-col items-center mb-8">
+            <div className="w-16 h-16 bg-blue-600/20 text-blue-500 rounded-full flex items-center justify-center mb-4">
+              <Lock size={32} />
+            </div>
+            <h1 className="text-2xl font-black text-white italic tracking-widest uppercase">Admin Login</h1>
+            <p className="text-zinc-500 text-sm mt-1">賽事控制台</p>
+          </div>
+          <form onSubmit={handleLogin} className="space-y-4">
+            <div>
+              <input 
+                type="text" 
+                placeholder="帳號" 
+                value={usernameInput}
+                onChange={(e) => setUsernameInput(e.target.value)}
+                className="w-full bg-black border border-zinc-800 rounded-xl p-4 text-white focus:ring-2 focus:ring-blue-500 outline-none" 
+              />
+            </div>
+            <div>
+              <input 
+                type="password" 
+                placeholder="密碼" 
+                value={passwordInput}
+                onChange={(e) => setPasswordInput(e.target.value)}
+                className="w-full bg-black border border-zinc-800 rounded-xl p-4 text-white focus:ring-2 focus:ring-blue-500 outline-none" 
+              />
+            </div>
+            <button type="submit" className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 rounded-xl transition-colors mt-4">
+              登入系統
+            </button>
+          </form>
+        </div>
+      </div>
+    );
+  }
+
+  if (!match) return <div className="min-h-screen bg-zinc-950 text-white flex items-center justify-center font-black italic text-2xl animate-pulse">Loading...</div>;
 
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100 p-8 font-sans pb-20">
       <div className="max-w-7xl mx-auto space-y-6">
         
-        {/* 賽事切換 */}
-        <div className="bg-zinc-900 p-4 rounded-2xl border border-zinc-800 flex gap-2 overflow-x-auto">
-          {[1,2,3,4,5,6,7,8].map(id => (
-            <button key={id} onClick={() => setCurrentMatchId(id)} className={`px-6 py-3 rounded-xl font-black whitespace-nowrap transition-all ${currentMatchId === id ? 'bg-blue-600 text-white shadow-lg' : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'}`}>
-              賽事 {id}
-            </button>
-          ))}
+        {/* 賽事切換與登出 */}
+        <div className="bg-zinc-900 p-4 rounded-2xl border border-zinc-800 flex justify-between items-center gap-4 overflow-x-auto">
+          <div className="flex gap-2">
+            {[1,2,3,4,5,6,7,8].map(id => (
+              <button key={id} onClick={() => setCurrentMatchId(id)} className={`px-6 py-3 rounded-xl font-black whitespace-nowrap transition-all ${currentMatchId === id ? 'bg-blue-600 text-white shadow-lg' : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'}`}>
+                賽事 {id}
+              </button>
+            ))}
+          </div>
+          <button onClick={() => setIsAuthenticated(false)} className="flex items-center gap-2 text-zinc-500 hover:text-red-400 px-4 py-2 font-bold transition-colors">
+            <LogOut size={18} /> 登出
+          </button>
         </div>
 
         {/* Header */}
@@ -121,14 +217,14 @@ export default function AdminPage() {
             </div>
           </div>
           <div className="flex gap-3 flex-wrap">
-            <button onClick={() => supabase.from('active_match').update({p1_votes:0, p2_votes:0}).eq('id',currentMatchId).then(()=>fetchMatch(currentMatchId))} className="flex items-center gap-2 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 rounded-lg text-sm font-bold"><RotateCcw size={16}/> 歸零</button>
+            {/* 💡 修正 3：綁定核彈級徹底歸零函數 */}
+            <button onClick={handleDeepReset} className="flex items-center gap-2 px-4 py-2 bg-zinc-800 hover:bg-red-900/50 hover:text-red-400 hover:border-red-900/50 border border-transparent rounded-lg text-sm font-bold transition-colors"><RotateCcw size={16}/> 徹底歸零</button>
             <button onClick={handleSave} className="flex items-center gap-2 px-6 py-2 bg-zinc-700 hover:bg-zinc-600 rounded-lg font-bold"><Save size={16}/> 儲存</button>
             <button onClick={handleToggleVoting} className={`flex items-center gap-2 px-6 py-2 rounded-lg font-black transition-all shadow-lg ${match.is_voting_open ? 'bg-emerald-600 hover:bg-emerald-500' : 'bg-red-700 hover:bg-red-600'}`}><Power size={18}/> {match.is_voting_open ? '開放投票中' : '投票已關閉'}</button>
             <button onClick={handleSetLive} className="flex items-center gap-2 px-6 py-2 bg-red-600 hover:bg-red-500 rounded-lg font-black shadow-[0_0_15px_rgba(220,38,38,0.5)]"><Radio size={18}/> 推上直播</button>
           </div>
         </div>
 
-        {/* 玩家設定區省略... 跟之前完全一樣，這裡僅放完整代碼確保能運行 */}
         <div className="flex justify-center gap-4 bg-zinc-900/50 py-4 rounded-2xl border border-zinc-800/50">
            <button onClick={() => setEditMode('screen')} className={`flex items-center gap-2 px-8 py-3 rounded-xl font-bold ${editMode === 'screen' ? 'bg-blue-600 text-white' : 'bg-zinc-800 text-zinc-400'}`}><MonitorPlay size={20} /> 調整【現場大螢幕】</button>
            <button onClick={() => setEditMode('stream')} className={`flex items-center gap-2 px-8 py-3 rounded-xl font-bold ${editMode === 'stream' ? 'bg-purple-600 text-white' : 'bg-zinc-800 text-zinc-400'}`}><Tv size={20} /> 調整【直播台下標】</button>
@@ -172,7 +268,6 @@ export default function AdminPage() {
         {/* 🏆 抽獎區 */}
         <div className="bg-gradient-to-br from-yellow-900/40 to-black p-8 rounded-3xl border border-yellow-700/50 mt-8 shadow-[0_0_50px_rgba(202,138,4,0.15)] relative">
           
-          {/* 💡 當大螢幕正在顯示時，顯示關閉按鈕 */}
           {match.show_lottery && (
             <button onClick={handleCloseLottery} className="absolute top-6 right-6 bg-red-600 hover:bg-red-500 text-white font-black px-6 py-2 rounded-xl shadow-lg flex items-center gap-2 animate-pulse">
               <MonitorOff size={18} /> 關閉螢幕抽獎畫面
@@ -206,7 +301,6 @@ export default function AdminPage() {
             <div className="mt-8 p-6 bg-zinc-900 border border-yellow-500/30 rounded-2xl">
               <div className="flex justify-between items-center mb-6">
                 <h3 className="text-xl font-bold text-yellow-400 flex items-center gap-2"><Users size={20}/> 恭喜以下 {winners.length} 位得獎者：</h3>
-                {/* 💡 發送至螢幕按鈕 */}
                 <button onClick={handlePushLottery} className="bg-yellow-500 hover:bg-yellow-400 text-black font-black px-6 py-2 rounded-xl shadow-[0_0_20px_rgba(234,179,8,0.5)] transition-all flex items-center gap-2">
                   <MonitorUp size={18} /> 推送名單至大螢幕
                 </button>
