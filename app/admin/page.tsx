@@ -5,7 +5,7 @@ import { Save, RotateCcw, MonitorPlay, Tv, Radio, Power, Trophy, Users, MonitorU
 
 // 💡 登入帳密設定 (請在此修改)
 const ADMIN_USERNAME = 'admin';
-const ADMIN_PASSWORD = '1234';
+const ADMIN_PASSWORD = 'com2usno.1';
 
 export default function AdminPage() {
   // 💡 登入狀態管理
