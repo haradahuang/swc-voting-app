@@ -4,7 +4,7 @@ import { supabase } from '@/lib/supabase';
 import { Save, RotateCcw, MonitorPlay, Tv, Radio, Power, Trophy, Users, MonitorUp, MonitorOff, Lock, LogOut } from 'lucide-react';
 
 export default function AdminPage() {
-  // 💡 安全升級：管理員帳密輸入狀態
+  // 💡 安全升級：真實 Supabase 登入狀態管理
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [emailInput, setEmailInput] = useState('');
   const [passwordInput, setPasswordInput] = useState('');
@@ -20,7 +20,7 @@ export default function AdminPage() {
   const [winners, setWinners] = useState<any[]>([]);
   const [isDrawing, setIsDrawing] = useState(false);
 
-  // 💡 檢查目前的登入 Session，如果之前登入過就不用重複登入
+  // 檢查目前的登入 Session (若已經登入過就免重複登入)
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) {
@@ -30,14 +30,13 @@ export default function AdminPage() {
     });
   }, []);
 
-  // 💡 重新加載賽事資料與已存的得獎名單
   useEffect(() => {
     if (isAuthenticated) {
       fetchMatch(currentMatchId);
     }
   }, [currentMatchId, isAuthenticated]);
 
-  // 💡 修正 1：改用 Supabase 官方資料庫認證登入
+  // 💡 向 Supabase 驗證 Email 與密碼
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     const { data, error } = await supabase.auth.signInWithPassword({
@@ -46,14 +45,13 @@ export default function AdminPage() {
     });
 
     if (error) {
+      // 這裡會顯示 Supabase 系統回傳的真實錯誤原因
       alert(`❌ 登入失敗: ${error.message}`);
     } else if (data?.user) {
       setIsAuthenticated(true);
-      alert('✅ 成功通過資料庫安全認證！');
     }
   };
 
-  // 💡 登出官方帳號
   const handleLogout = async () => {
     await supabase.auth.signOut();
     setIsAuthenticated(false);
@@ -91,9 +89,14 @@ export default function AdminPage() {
 
   const handleChange = (field: string, value: any) => setMatch((prev: any) => ({ ...prev, [field]: value }));
   const handleSyncToDB = async (field: string, value: any) => await supabase.from('active_match').update({ [field]: value }).eq('id', currentMatchId);
+  
   const handleSave = async () => {
-    await supabase.from('active_match').update(match).eq('id', currentMatchId);
-    alert(`賽事 ${currentMatchId} 同步成功！`);
+    const { error } = await supabase.from('active_match').update(match).eq('id', currentMatchId);
+    if (error) {
+      alert(`儲存失敗: ${error.message} (請確認您登入的是 twmkt@com2us.com)`);
+    } else {
+      alert(`賽事 ${currentMatchId} 同步成功！`);
+    }
   };
 
   const handleSetLive = async () => {
@@ -109,26 +112,28 @@ export default function AdminPage() {
     setMatch({ ...match, is_voting_open: newState });
   };
 
-  // 徹底歸零函數
   const handleDeepReset = async () => {
     const confirmReset = window.confirm('⚠️ 警告：這將會清除目前賽事的所有票數、得獎名單，並且「刪除玩家投票紀錄」(玩家可以重新投票)。確定要徹底歸零嗎？');
     if (!confirmReset) return;
 
     try {
-      await supabase.from('user_votes').delete().eq('match_id', currentMatchId);
-      await supabase.from('active_match').update({ 
+      const { error: delError } = await supabase.from('user_votes').delete().eq('match_id', currentMatchId);
+      if (delError) throw delError;
+
+      const { error: upError } = await supabase.from('active_match').update({ 
         p1_votes: 0, 
         p2_votes: 0,
         show_lottery: false,
         lottery_winners: []
       }).eq('id', currentMatchId);
+      if (upError) throw upError;
 
       setWinners([]);
       fetchMatch(currentMatchId);
       alert('✅ 賽事已徹底歸零，玩家現在可以重新對此賽事投票了！');
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
-      alert('歸零發生錯誤，請確認您的帳號是否具有管理員權限');
+      alert(`歸零發生錯誤: ${error.message} (請確認您具有管理員權限)`);
     }
   };
 
@@ -164,7 +169,7 @@ export default function AdminPage() {
 
   if (authLoading) return <div className="min-h-screen bg-zinc-950 text-white flex items-center justify-center font-black tracking-widest text-xl animate-pulse">SECURITY CHECK...</div>;
 
-  // 💡 修正 1：未通過資料庫驗證時，顯示官方登入畫面
+  // 💡 驗證登入介面
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-zinc-950 flex flex-col items-center justify-center p-6 font-sans">
@@ -180,7 +185,7 @@ export default function AdminPage() {
             <div>
               <input 
                 type="email" 
-                placeholder="管理員 Email" 
+                placeholder="管理員 Email (twmkt@com2us.com)" 
                 value={emailInput}
                 onChange={(e) => setEmailInput(e.target.value)}
                 className="w-full bg-black border border-zinc-800 rounded-xl p-4 text-white focus:ring-2 focus:ring-blue-500 outline-none" 
