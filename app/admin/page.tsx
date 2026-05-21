@@ -3,15 +3,12 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Save, RotateCcw, MonitorPlay, Tv, Radio, Power, Trophy, Users, MonitorUp, MonitorOff, Lock, LogOut } from 'lucide-react';
 
-// 💡 登入帳密設定 (請在此修改)
-const ADMIN_USERNAME = 'admin';
-const ADMIN_PASSWORD = 'com2usno.1';
-
 export default function AdminPage() {
-  // 💡 登入狀態管理
+  // 💡 安全升級：管理員帳密輸入狀態
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [usernameInput, setUsernameInput] = useState('');
+  const [emailInput, setEmailInput] = useState('');
   const [passwordInput, setPasswordInput] = useState('');
+  const [authLoading, setAuthLoading] = useState(true);
 
   const [match, setMatch] = useState<any>(null);
   const [uploading, setUploading] = useState(false);
@@ -23,26 +20,49 @@ export default function AdminPage() {
   const [winners, setWinners] = useState<any[]>([]);
   const [isDrawing, setIsDrawing] = useState(false);
 
-  // 💡 切換賽事時重新抓取資料 (移除強制清空 winners 的邏輯)
+  // 💡 檢查目前的登入 Session，如果之前登入過就不用重複登入
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        setIsAuthenticated(true);
+      }
+      setAuthLoading(false);
+    });
+  }, []);
+
+  // 💡 重新加載賽事資料與已存的得獎名單
   useEffect(() => {
     if (isAuthenticated) {
       fetchMatch(currentMatchId);
     }
   }, [currentMatchId, isAuthenticated]);
 
-  const handleLogin = (e: React.FormEvent) => {
+  // 💡 修正 1：改用 Supabase 官方資料庫認證登入
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (usernameInput === ADMIN_USERNAME && passwordInput === ADMIN_PASSWORD) {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: emailInput,
+      password: passwordInput,
+    });
+
+    if (error) {
+      alert(`❌ 登入失敗: ${error.message}`);
+    } else if (data?.user) {
       setIsAuthenticated(true);
-    } else {
-      alert('❌ 帳號或密碼錯誤');
+      alert('✅ 成功通過資料庫安全認證！');
     }
+  };
+
+  // 💡 登出官方帳號
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    setIsAuthenticated(false);
+    setMatch(null);
   };
 
   const fetchMatch = async (id: number) => {
     const { data } = await supabase.from('active_match').select('*').eq('id', id).single();
     setMatch(data);
-    // 💡 修正 2：從資料庫讀取已儲存的抽獎名單，確保切換賽事時保留紀錄
     if (data?.lottery_winners) {
       setWinners(data.lottery_winners);
     } else {
@@ -89,16 +109,13 @@ export default function AdminPage() {
     setMatch({ ...match, is_voting_open: newState });
   };
 
-  // 💡 修正 3：核彈級徹底歸零函數
+  // 徹底歸零函數
   const handleDeepReset = async () => {
     const confirmReset = window.confirm('⚠️ 警告：這將會清除目前賽事的所有票數、得獎名單，並且「刪除玩家投票紀錄」(玩家可以重新投票)。確定要徹底歸零嗎？');
     if (!confirmReset) return;
 
     try {
-      // 1. 刪除該賽事的所有玩家投票紀錄 (解鎖重複投票限制)
       await supabase.from('user_votes').delete().eq('match_id', currentMatchId);
-      
-      // 2. 清空票數與抽獎名單，關閉大螢幕抽獎畫面
       await supabase.from('active_match').update({ 
         p1_votes: 0, 
         p2_votes: 0,
@@ -106,13 +123,12 @@ export default function AdminPage() {
         lottery_winners: []
       }).eq('id', currentMatchId);
 
-      // 3. 更新本地狀態
       setWinners([]);
       fetchMatch(currentMatchId);
       alert('✅ 賽事已徹底歸零，玩家現在可以重新對此賽事投票了！');
     } catch (error) {
       console.error(error);
-      alert('歸零發生錯誤，請查看系統日誌');
+      alert('歸零發生錯誤，請確認您的帳號是否具有管理員權限');
     }
   };
 
@@ -146,7 +162,9 @@ export default function AdminPage() {
     setMatch({ ...match, show_lottery: false });
   };
 
-  // 💡 修正 1：未登入時顯示登入畫面
+  if (authLoading) return <div className="min-h-screen bg-zinc-950 text-white flex items-center justify-center font-black tracking-widest text-xl animate-pulse">SECURITY CHECK...</div>;
+
+  // 💡 修正 1：未通過資料庫驗證時，顯示官方登入畫面
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-zinc-950 flex flex-col items-center justify-center p-6 font-sans">
@@ -155,30 +173,32 @@ export default function AdminPage() {
             <div className="w-16 h-16 bg-blue-600/20 text-blue-500 rounded-full flex items-center justify-center mb-4">
               <Lock size={32} />
             </div>
-            <h1 className="text-2xl font-black text-white italic tracking-widest uppercase">Admin Login</h1>
-            <p className="text-zinc-500 text-sm mt-1">賽事控制台</p>
+            <h1 className="text-2xl font-black text-white italic tracking-widest uppercase">SWC Admin</h1>
+            <p className="text-zinc-500 text-sm mt-1">資料庫最高安全防護模式</p>
           </div>
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
               <input 
-                type="text" 
-                placeholder="帳號" 
-                value={usernameInput}
-                onChange={(e) => setUsernameInput(e.target.value)}
+                type="email" 
+                placeholder="管理員 Email" 
+                value={emailInput}
+                onChange={(e) => setEmailInput(e.target.value)}
                 className="w-full bg-black border border-zinc-800 rounded-xl p-4 text-white focus:ring-2 focus:ring-blue-500 outline-none" 
+                required
               />
             </div>
             <div>
               <input 
                 type="password" 
-                placeholder="密碼" 
+                placeholder="管理員密碼" 
                 value={passwordInput}
                 onChange={(e) => setPasswordInput(e.target.value)}
                 className="w-full bg-black border border-zinc-800 rounded-xl p-4 text-white focus:ring-2 focus:ring-blue-500 outline-none" 
+                required
               />
             </div>
-            <button type="submit" className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 rounded-xl transition-colors mt-4">
-              登入系統
+            <button type="submit" className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 rounded-xl transition-colors mt-4 shadow-lg shadow-blue-600/30">
+              安全登入
             </button>
           </form>
         </div>
@@ -186,13 +206,13 @@ export default function AdminPage() {
     );
   }
 
-  if (!match) return <div className="min-h-screen bg-zinc-950 text-white flex items-center justify-center font-black italic text-2xl animate-pulse">Loading...</div>;
+  if (!match) return <div className="min-h-screen bg-zinc-950 text-white flex items-center justify-center font-black italic text-2xl animate-pulse">LOADING DETAILS...</div>;
 
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100 p-8 font-sans pb-20">
       <div className="max-w-7xl mx-auto space-y-6">
         
-        {/* 賽事切換與登出 */}
+        {/* 賽事切換與安全登出 */}
         <div className="bg-zinc-900 p-4 rounded-2xl border border-zinc-800 flex justify-between items-center gap-4 overflow-x-auto">
           <div className="flex gap-2">
             {[1,2,3,4,5,6,7,8].map(id => (
@@ -201,8 +221,8 @@ export default function AdminPage() {
               </button>
             ))}
           </div>
-          <button onClick={() => setIsAuthenticated(false)} className="flex items-center gap-2 text-zinc-500 hover:text-red-400 px-4 py-2 font-bold transition-colors">
-            <LogOut size={18} /> 登出
+          <button onClick={handleLogout} className="flex items-center gap-2 text-zinc-500 hover:text-red-400 px-4 py-2 font-bold transition-colors">
+            <LogOut size={18} /> 安全登出
           </button>
         </div>
 
@@ -217,7 +237,6 @@ export default function AdminPage() {
             </div>
           </div>
           <div className="flex gap-3 flex-wrap">
-            {/* 💡 修正 3：綁定核彈級徹底歸零函數 */}
             <button onClick={handleDeepReset} className="flex items-center gap-2 px-4 py-2 bg-zinc-800 hover:bg-red-900/50 hover:text-red-400 hover:border-red-900/50 border border-transparent rounded-lg text-sm font-bold transition-colors"><RotateCcw size={16}/> 徹底歸零</button>
             <button onClick={handleSave} className="flex items-center gap-2 px-6 py-2 bg-zinc-700 hover:bg-zinc-600 rounded-lg font-bold"><Save size={16}/> 儲存</button>
             <button onClick={handleToggleVoting} className={`flex items-center gap-2 px-6 py-2 rounded-lg font-black transition-all shadow-lg ${match.is_voting_open ? 'bg-emerald-600 hover:bg-emerald-500' : 'bg-red-700 hover:bg-red-600'}`}><Power size={18}/> {match.is_voting_open ? '開放投票中' : '投票已關閉'}</button>
