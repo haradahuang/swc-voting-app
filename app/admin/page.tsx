@@ -4,7 +4,6 @@ import { supabase } from '@/lib/supabase';
 import { Save, RotateCcw, MonitorPlay, Tv, Radio, Power, Trophy, Users, MonitorUp, MonitorOff, Lock, LogOut } from 'lucide-react';
 
 export default function AdminPage() {
-  // 💡 安全升級：真實 Supabase 登入狀態管理
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [emailInput, setEmailInput] = useState('');
   const [passwordInput, setPasswordInput] = useState('');
@@ -20,7 +19,6 @@ export default function AdminPage() {
   const [winners, setWinners] = useState<any[]>([]);
   const [isDrawing, setIsDrawing] = useState(false);
 
-  // 檢查目前的登入 Session (若已經登入過就免重複登入)
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) {
@@ -36,7 +34,6 @@ export default function AdminPage() {
     }
   }, [currentMatchId, isAuthenticated]);
 
-  // 💡 向 Supabase 驗證 Email 與密碼
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     const { data, error } = await supabase.auth.signInWithPassword({
@@ -45,7 +42,6 @@ export default function AdminPage() {
     });
 
     if (error) {
-      // 這裡會顯示 Supabase 系統回傳的真實錯誤原因
       alert(`❌ 登入失敗: ${error.message}`);
     } else if (data?.user) {
       setIsAuthenticated(true);
@@ -58,8 +54,13 @@ export default function AdminPage() {
     setMatch(null);
   };
 
+  // 💡 強化：如果讀取失敗會跳出警告
   const fetchMatch = async (id: number) => {
-    const { data } = await supabase.from('active_match').select('*').eq('id', id).single();
+    const { data, error } = await supabase.from('active_match').select('*').eq('id', id).single();
+    if (error) {
+      alert(`❌ 讀取賽事失敗: ${error.message}`);
+      return;
+    }
     setMatch(data);
     if (data?.lottery_winners) {
       setWinners(data.lottery_winners);
@@ -80,36 +81,48 @@ export default function AdminPage() {
       const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(fileName);
       setMatch({ ...match, [`${playerKey}_avatar`]: publicUrl });
       await supabase.from('active_match').update({ [`${playerKey}_avatar`]: publicUrl }).eq('id', currentMatchId);
-    } catch (error) {
-      alert('上傳失敗');
+    } catch (error: any) {
+      alert(`上傳失敗: ${error.message}`);
     } finally {
       setUploading(false);
     }
   };
 
   const handleChange = (field: string, value: any) => setMatch((prev: any) => ({ ...prev, [field]: value }));
-  const handleSyncToDB = async (field: string, value: any) => await supabase.from('active_match').update({ [field]: value }).eq('id', currentMatchId);
+  const handleSyncToDB = async (field: string, value: any) => {
+    const { error } = await supabase.from('active_match').update({ [field]: value }).eq('id', currentMatchId);
+    if (error) console.error("Sync Error:", error.message);
+  };
   
+  // 💡 強化：顯示具體儲存失敗原因
   const handleSave = async () => {
     const { error } = await supabase.from('active_match').update(match).eq('id', currentMatchId);
     if (error) {
-      alert(`儲存失敗: ${error.message} (請確認您登入的是 twmkt@com2us.com)`);
+      alert(`❌ 儲存失敗: ${error.message} (權限不足)`);
     } else {
-      alert(`賽事 ${currentMatchId} 同步成功！`);
+      alert(`✅ 賽事 ${currentMatchId} 同步成功！`);
     }
   };
 
   const handleSetLive = async () => {
-    await supabase.from('active_match').update({ is_active: false }).neq('id', 0); 
-    await supabase.from('active_match').update({ is_active: true }).eq('id', currentMatchId); 
+    const { error: err1 } = await supabase.from('active_match').update({ is_active: false }).neq('id', 0); 
+    const { error: err2 } = await supabase.from('active_match').update({ is_active: true }).eq('id', currentMatchId); 
+    if (err1 || err2) {
+      alert(`❌ 推上直播失敗: ${(err1 || err2)?.message}`);
+      return;
+    }
     alert(`✅ 已推送到大螢幕！`);
     fetchMatch(currentMatchId);
   };
 
   const handleToggleVoting = async () => {
     const newState = !match.is_voting_open;
-    await supabase.from('active_match').update({ is_voting_open: newState }).eq('id', currentMatchId);
-    setMatch({ ...match, is_voting_open: newState });
+    const { error } = await supabase.from('active_match').update({ is_voting_open: newState }).eq('id', currentMatchId);
+    if (error) {
+      alert(`❌ 切換投票狀態失敗: ${error.message}`);
+    } else {
+      setMatch({ ...match, is_voting_open: newState });
+    }
   };
 
   const handleDeepReset = async () => {
@@ -133,7 +146,7 @@ export default function AdminPage() {
       alert('✅ 賽事已徹底歸零，玩家現在可以重新對此賽事投票了！');
     } catch (error: any) {
       console.error(error);
-      alert(`歸零發生錯誤: ${error.message} (請確認您具有管理員權限)`);
+      alert(`❌ 歸零發生錯誤: ${error.message} (權限不足)`);
     }
   };
 
@@ -157,19 +170,26 @@ export default function AdminPage() {
   };
 
   const handlePushLottery = async () => {
-    await supabase.from('active_match').update({ show_lottery: true, lottery_winners: winners }).eq('id', currentMatchId);
-    setMatch({ ...match, show_lottery: true });
-    alert('已將抽獎結果發送至大螢幕與直播！');
+    const { error } = await supabase.from('active_match').update({ show_lottery: true, lottery_winners: winners }).eq('id', currentMatchId);
+    if (error) {
+      alert(`❌ 推播失敗: ${error.message}`);
+    } else {
+      setMatch({ ...match, show_lottery: true });
+      alert('✅ 已將抽獎結果發送至大螢幕與直播！');
+    }
   };
 
   const handleCloseLottery = async () => {
-    await supabase.from('active_match').update({ show_lottery: false }).eq('id', currentMatchId);
-    setMatch({ ...match, show_lottery: false });
+    const { error } = await supabase.from('active_match').update({ show_lottery: false }).eq('id', currentMatchId);
+    if (error) {
+      alert(`❌ 關閉失敗: ${error.message}`);
+    } else {
+      setMatch({ ...match, show_lottery: false });
+    }
   };
 
   if (authLoading) return <div className="min-h-screen bg-zinc-950 text-white flex items-center justify-center font-black tracking-widest text-xl animate-pulse">SECURITY CHECK...</div>;
 
-  // 💡 驗證登入介面
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-zinc-950 flex flex-col items-center justify-center p-6 font-sans">
@@ -183,9 +203,10 @@ export default function AdminPage() {
           </div>
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
+              {/* 💡 修正 1：移除括號內的信箱提示 */}
               <input 
                 type="email" 
-                placeholder="管理員 Email (twmkt@com2us.com)" 
+                placeholder="管理員 Email" 
                 value={emailInput}
                 onChange={(e) => setEmailInput(e.target.value)}
                 className="w-full bg-black border border-zinc-800 rounded-xl p-4 text-white focus:ring-2 focus:ring-blue-500 outline-none" 
