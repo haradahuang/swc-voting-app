@@ -54,11 +54,10 @@ export default function AdminPage() {
     setMatch(null);
   };
 
-  // 💡 強化：如果讀取失敗會跳出警告
   const fetchMatch = async (id: number) => {
     const { data, error } = await supabase.from('active_match').select('*').eq('id', id).single();
     if (error) {
-      alert(`❌ 讀取賽事失敗: ${error.message}`);
+      alert(`❌ 讀取賽事 ${id} 失敗 (可能是資料庫還沒建立這筆賽事)\n錯誤訊息: ${error.message}`);
       return;
     }
     setMatch(data);
@@ -89,16 +88,16 @@ export default function AdminPage() {
   };
 
   const handleChange = (field: string, value: any) => setMatch((prev: any) => ({ ...prev, [field]: value }));
+  
   const handleSyncToDB = async (field: string, value: any) => {
     const { error } = await supabase.from('active_match').update({ [field]: value }).eq('id', currentMatchId);
     if (error) console.error("Sync Error:", error.message);
   };
   
-  // 💡 強化：顯示具體儲存失敗原因
   const handleSave = async () => {
     const { error } = await supabase.from('active_match').update(match).eq('id', currentMatchId);
     if (error) {
-      alert(`❌ 儲存失敗: ${error.message} (權限不足)`);
+      alert(`❌ 儲存失敗 (安全權限阻擋): ${error.message}`);
     } else {
       alert(`✅ 賽事 ${currentMatchId} 同步成功！`);
     }
@@ -146,7 +145,7 @@ export default function AdminPage() {
       alert('✅ 賽事已徹底歸零，玩家現在可以重新對此賽事投票了！');
     } catch (error: any) {
       console.error(error);
-      alert(`❌ 歸零發生錯誤: ${error.message} (權限不足)`);
+      alert(`❌ 歸零發生錯誤: ${error.message}`);
     }
   };
 
@@ -203,7 +202,6 @@ export default function AdminPage() {
           </div>
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
-              {/* 💡 修正 1：移除括號內的信箱提示 */}
               <input 
                 type="email" 
                 placeholder="管理員 Email" 
