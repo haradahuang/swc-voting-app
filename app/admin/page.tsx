@@ -1,7 +1,10 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
-import { Save, RotateCcw, MonitorPlay, Tv, Radio, Power, Trophy, Users, MonitorUp, MonitorOff, Lock, LogOut } from 'lucide-react';
+import { Save, RotateCcw, MonitorPlay, Tv, Radio, Power, Trophy, Users, MonitorUp, MonitorOff, Lock, LogOut, Monitor, Smartphone } from 'lucide-react';
+
+// 💡 定義四種編輯模式
+type EditMode = 'screen' | 'stream' | 'vote_pc' | 'vote_mobile';
 
 export default function AdminPage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -11,7 +14,8 @@ export default function AdminPage() {
 
   const [match, setMatch] = useState<any>(null);
   const [uploading, setUploading] = useState(false);
-  const [editMode, setEditMode] = useState<'screen' | 'stream'>('screen');
+  // 💡 狀態改為支援四種模式
+  const [editMode, setEditMode] = useState<EditMode>('screen');
   const [currentMatchId, setCurrentMatchId] = useState<number>(1);
 
   const [drawTarget, setDrawTarget] = useState<'all' | '1' | '2'>('all');
@@ -187,6 +191,17 @@ export default function AdminPage() {
     }
   };
 
+  // 💡 輔助函數：根據當前編輯模式，取得資料庫欄位的正確前綴
+  const getDbFieldPrefix = (player: string, mode: EditMode) => {
+    switch (mode) {
+      case 'screen': return `${player}`;
+      case 'stream': return `${player}_stream`;
+      case 'vote_pc': return `${player}_vote_pc`;
+      case 'vote_mobile': return `${player}_vote_mobile`;
+      default: return `${player}`;
+    }
+  };
+
   if (authLoading) return <div className="min-h-screen bg-zinc-950 text-white flex items-center justify-center font-black tracking-widest text-xl animate-pulse">SECURITY CHECK...</div>;
 
   if (!isAuthenticated) {
@@ -268,26 +283,46 @@ export default function AdminPage() {
           </div>
         </div>
 
-        <div className="flex justify-center gap-4 bg-zinc-900/50 py-4 rounded-2xl border border-zinc-800/50">
-           <button onClick={() => setEditMode('screen')} className={`flex items-center gap-2 px-8 py-3 rounded-xl font-bold ${editMode === 'screen' ? 'bg-blue-600 text-white' : 'bg-zinc-800 text-zinc-400'}`}><MonitorPlay size={20} /> 調整【現場大螢幕】</button>
-           <button onClick={() => setEditMode('stream')} className={`flex items-center gap-2 px-8 py-3 rounded-xl font-bold ${editMode === 'stream' ? 'bg-purple-600 text-white' : 'bg-zinc-800 text-zinc-400'}`}><Tv size={20} /> 調整【直播台下標】</button>
+        {/* 💡 擴充為四顆控制按鈕 */}
+        <div className="flex flex-wrap justify-center gap-4 bg-zinc-900/50 p-4 rounded-2xl border border-zinc-800/50">
+           <button onClick={() => setEditMode('screen')} className={`flex items-center gap-2 px-6 py-3 rounded-xl font-bold ${editMode === 'screen' ? 'bg-blue-600 text-white' : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'}`}><MonitorPlay size={18} /> 現場大螢幕</button>
+           <button onClick={() => setEditMode('stream')} className={`flex items-center gap-2 px-6 py-3 rounded-xl font-bold ${editMode === 'stream' ? 'bg-purple-600 text-white' : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'}`}><Tv size={18} /> 直播台下標</button>
+           <button onClick={() => setEditMode('vote_pc')} className={`flex items-center gap-2 px-6 py-3 rounded-xl font-bold ${editMode === 'vote_pc' ? 'bg-emerald-600 text-white' : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'}`}><Monitor size={18} /> 投票頁(PC)</button>
+           <button onClick={() => setEditMode('vote_mobile')} className={`flex items-center gap-2 px-6 py-3 rounded-xl font-bold ${editMode === 'vote_mobile' ? 'bg-amber-600 text-white' : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'}`}><Smartphone size={18} /> 投票頁(手機)</button>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {['p1', 'p2'].map((p) => {
-            const currentX = match[editMode === 'screen' ? `${p}_x` : `${p}_stream_x`] ?? 50;
-            const currentY = match[editMode === 'screen' ? `${p}_y` : `${p}_stream_y`] ?? 50;
-            const currentSize = match[editMode === 'screen' ? `${p}_size` : `${p}_stream_size`] ?? 100;
+            // 💡 根據選擇的模式，動態獲取當前的 X, Y, Size
+            const prefix = getDbFieldPrefix(p, editMode);
+            const currentX = match[`${prefix}_x`] ?? 50;
+            const currentY = match[`${prefix}_y`] ?? 50;
+            const currentSize = match[`${prefix}_size`] ?? 100;
+            
+            // 介面顏色變化邏輯
+            let boxColor = 'bg-zinc-900 border-zinc-800';
+            if (editMode === 'stream') boxColor = 'bg-[#1a1525] border-purple-900/50';
+            if (editMode === 'vote_pc') boxColor = 'bg-[#10241b] border-emerald-900/50';
+            if (editMode === 'vote_mobile') boxColor = 'bg-[#291c10] border-amber-900/50';
+
+            let innerBoxColor = 'bg-zinc-800/50';
+            if (editMode === 'stream') innerBoxColor = 'bg-purple-900/20';
+            if (editMode === 'vote_pc') innerBoxColor = 'bg-emerald-900/20';
+            if (editMode === 'vote_mobile') innerBoxColor = 'bg-amber-900/20';
+
             return (
-              <div key={p} className={`p-8 rounded-3xl border space-y-6 flex flex-col xl:flex-row gap-8 ${editMode === 'screen' ? 'bg-zinc-900 border-zinc-800' : 'bg-[#1a1525] border-purple-900/50'}`}>
+              <div key={p} className={`p-8 rounded-3xl border space-y-6 flex flex-col xl:flex-row gap-8 ${boxColor}`}>
                 <div className="flex-1 space-y-4">
                   <h2 className={`text-xl font-bold uppercase ${p === 'p1' ? 'text-blue-500' : 'text-red-500'}`}>Player {p === 'p1' ? '1 (Blue)' : '2 (Red)'}</h2>
                   <input className="w-full bg-zinc-800/80 border-none rounded-xl p-3 text-white" value={match[`${p}_name`]} onChange={(e) => handleChange(`${p}_name`, e.target.value)} onBlur={(e) => handleSyncToDB(`${p}_name`, e.target.value)} />
                   <label className="w-full cursor-pointer bg-zinc-800/80 border-2 border-dashed border-zinc-700 rounded-xl p-3 flex justify-center"><span className="text-sm text-zinc-400 font-bold">{uploading ? 'Uploading...' : '上傳圖片 (PNG)'}</span><input type="file" className="hidden" onChange={(e) => handleFileUpload(e, p as any)} /></label>
-                  <div className={`space-y-4 p-4 rounded-2xl ${editMode === 'screen' ? 'bg-zinc-800/50' : 'bg-purple-900/20'}`}>
+                  
+                  <div className={`space-y-4 p-4 rounded-2xl ${innerBoxColor}`}>
                     {[['size', '大小', 10, 300], ['x', '水平 X', 0, 100], ['y', '垂直 Y', 0, 100]].map(([key, label, min, max]) => {
-                      const dbField = editMode === 'screen' ? `${p}_${key}` : `${p}_stream_${key}`;
+                      // 💡 組合成最終的資料庫欄位名稱
+                      const dbField = `${prefix}_${key}`;
                       const val = match[dbField] ?? (key === 'size' ? 100 : 50);
+                      
                       return (
                         <div key={key}>
                           <label className="text-[10px] uppercase font-bold text-zinc-400 mb-1">{label}</label>
@@ -300,7 +335,7 @@ export default function AdminPage() {
                     })}
                   </div>
                 </div>
-                <div className={`w-48 bg-black border-2 rounded-xl overflow-hidden relative shrink-0 ${editMode === 'screen' ? 'h-64 border-zinc-700' : 'h-32 border-purple-700 my-auto'}`}>
+                <div className={`w-48 bg-black border-2 rounded-xl overflow-hidden relative shrink-0 h-64 border-zinc-700 my-auto`}>
                   <img src={match[`${p}_avatar`]} style={{ transform: `translate(${currentX - 50}%, ${currentY - 50}%) scale(${currentSize / 100})`, transformOrigin: 'center center' }} className="w-full h-full object-contain pointer-events-none" alt="Preview" />
                 </div>
               </div>
