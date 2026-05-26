@@ -6,9 +6,21 @@ import { motion, AnimatePresence } from 'framer-motion';
 export default function VotePage() {
   const [match, setMatch] = useState<any>(null);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
-  
   const [user, setUser] = useState<any>(null);
   const [authLoading, setAuthLoading] = useState(true);
+  
+  // 💡 新增：追蹤目前是否為手機版畫面
+  const [isMobile, setIsMobile] = useState(false);
+
+  // 💡 新增：監聽螢幕寬度變化
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    // 首次載入時檢查一次
+    handleResize();
+    // 監聽視窗縮放
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -42,18 +54,15 @@ export default function VotePage() {
   const handleVote = async (player: 1 | 2) => {
     if (!user) return;
     
-    // 💡 阻擋邏輯：如果投票已關閉，直接擋下
     if (!match.is_voting_open) {
       setToastMsg('🚫 投票已結束！');
       setTimeout(() => setToastMsg(null), 1500);
       return;
     }
     
-    // 取得 Google 帳號的名字與信箱
     const email = user.email || '';
     const name = user.user_metadata?.full_name || user.user_metadata?.name || 'Player';
 
-    // 💡 呼叫更新後的 cast_vote，把信箱跟名字送進去抽獎池
     const { error } = await supabase.rpc('cast_vote', { 
       v_match_id: match.id, 
       v_player: player, 
@@ -106,8 +115,18 @@ export default function VotePage() {
     );
   }
 
-  const p1 = { x: match.p1_stream_x ?? 50, y: match.p1_stream_y ?? 50, size: match.p1_stream_size ?? 100 };
-  const p2 = { x: match.p2_stream_x ?? 50, y: match.p2_stream_y ?? 50, size: match.p2_stream_size ?? 100 };
+  // 💡 修正：根據是否為手機版，讀取對應的資料庫欄位
+  const p1 = { 
+    x: match[isMobile ? 'p1_vote_mobile_x' : 'p1_vote_pc_x'] ?? 50, 
+    y: match[isMobile ? 'p1_vote_mobile_y' : 'p1_vote_pc_y'] ?? 50, 
+    size: match[isMobile ? 'p1_vote_mobile_size' : 'p1_vote_pc_size'] ?? 100 
+  };
+  
+  const p2 = { 
+    x: match[isMobile ? 'p2_vote_mobile_x' : 'p2_vote_pc_x'] ?? 50, 
+    y: match[isMobile ? 'p2_vote_mobile_y' : 'p2_vote_pc_y'] ?? 50, 
+    size: match[isMobile ? 'p2_vote_mobile_size' : 'p2_vote_pc_size'] ?? 100 
+  };
 
   return (
     <div className="h-[100dvh] w-full bg-[#020205] flex flex-col overflow-hidden font-sans select-none text-white relative">
@@ -120,7 +139,6 @@ export default function VotePage() {
       </div>
 
       <div className="flex-1 flex flex-col md:flex-row relative">
-        {/* 💡 如果投票關閉，蓋上一層半透明遮罩與大大警告字樣 */}
         {!match.is_voting_open && (
            <div className="absolute inset-0 z-40 bg-black/70 backdrop-blur-sm flex items-center justify-center">
              <div className="text-4xl md:text-6xl font-black italic text-red-500 border-8 border-red-600 px-8 py-4 rounded-3xl rotate-[-10deg] tracking-widest bg-black/80 shadow-[0_0_80px_rgba(220,38,38,0.8)] backdrop-blur-none pointer-events-none uppercase">
@@ -129,7 +147,6 @@ export default function VotePage() {
            </div>
         )}
 
-        {/* 左方玩家一 */}
         <motion.div whileTap={{ brightness: 1.6 }} onClick={() => handleVote(1)} className="flex-1 relative cursor-pointer group overflow-hidden border-b md:border-b-0 md:border-r border-white/5">
           <div className="absolute inset-0 bg-blue-900/20 z-0" />
           <div className="absolute inset-0 w-full h-full flex items-center justify-center">
@@ -142,9 +159,6 @@ export default function VotePage() {
           </div>
         </motion.div>
 
-        {/* 💡 VS 標誌已在此處被刪除 */}
-
-        {/* 右方玩家二 */}
         <motion.div whileTap={{ brightness: 1.6 }} onClick={() => handleVote(2)} className="flex-1 relative cursor-pointer group overflow-hidden">
           <div className="absolute inset-0 bg-red-900/20 z-0" />
           <div className="absolute inset-0 w-full h-full flex items-center justify-center">
