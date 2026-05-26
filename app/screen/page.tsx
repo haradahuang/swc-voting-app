@@ -131,7 +131,7 @@ export default function StageScreenPage() {
       setHasSpun(true);
       supabase.from('user_votes').select('user_name').eq('match_id', match.id).limit(100).then(({ data }) => {
         const names = data?.map(d => d.user_name) || [];
-        setRealVoters(names.length > 0 ? names : ['Lucky Winner', 'Player', 'Vote User']);
+        setRealVoters(names); // 💡 只儲存真實名單
       });
       setTimeout(() => { setIsSpinning(false); }, 4000);
     }
@@ -142,12 +142,20 @@ export default function StageScreenPage() {
     }
   }, [match?.show_lottery, hasSpun, match?.id]);
 
+  // 💡 修正 3：動畫跑動時，如果真實名單太少，混入假名單陪跑
   useEffect(() => {
     let interval: any;
-    if (isSpinning && realVoters.length > 0) {
+    if (isSpinning) {
+      // 準備抽獎名單池 (如果不到 4 個，塞滿 20 個假名字進去攪拌)
+      let pool = [...realVoters];
+      if (pool.length < 4) {
+        const dummies = Array.from({ length: 20 }, (_, i) => `虛擬玩家${Math.floor(Math.random() * 9000) + 1000}`);
+        pool = [...pool, ...dummies];
+      }
+      
       interval = setInterval(() => {
-        const dummy = Array(4).fill(0).map(() => realVoters[Math.floor(Math.random() * realVoters.length)]);
-        setSpinningNames(dummy);
+        const currentSpin = Array(4).fill(0).map(() => pool[Math.floor(Math.random() * pool.length)]);
+        setSpinningNames(currentSpin);
       }, 80);
     }
     return () => clearInterval(interval);
@@ -178,11 +186,13 @@ export default function StageScreenPage() {
   if (maxNameLen >= 8) nameTextClass = "text-[70px] mb-4 leading-none";
   else if (maxNameLen >= 5) nameTextClass = "text-[90px] mb-3 leading-none";
 
+  // 💡 修正 1：遮蔽 Email 前綴 3 碼
   const maskEmail = (email: string) => {
     if (!email) return '';
     const [name, domain] = email.split('@');
-    if (!domain) return email;
-    return `${name.substring(0, 3)}***@${domain}`;
+    if (!domain) return email; // 預防不是完整信箱格式的資料
+    const visibleName = name.length > 3 ? name.substring(0, 3) : name.substring(0, 1);
+    return `${visibleName}***@${domain}`;
   };
 
   const currentWinners = match.lottery_winners?.slice(lotteryPage * 4, (lotteryPage * 4) + 4) || [];
@@ -225,7 +235,6 @@ export default function StageScreenPage() {
               <motion.div animate={{ x: [45, -45, 45], y: [20, -20, 20], scale: [1.1, 0.95, 1.1], opacity: [0.2, 0.4, 0.2] }} transition={{ duration: 50, repeat: Infinity, ease: 'easeInOut' }} className="absolute bottom-[-10%] right-[0%] w-[1000px] h-[1000px] mix-blend-screen" style={{ backgroundImage: "url('/cloud-left.png')", backgroundSize: 'contain', backgroundRepeat: 'no-repeat', backgroundPosition: 'center', filter: 'blur(10px)' }} />
             </div>
             
-            {/* 💡 修正：向左微調填補空隙 (補償斜體偏移) */}
             <div className="absolute left-[10px] top-[8%] text-[450px] font-black italic text-blue-300/30 leading-none pointer-events-none z-0 tracking-tighter drop-shadow-[0_0_30px_rgba(96,165,250,0.4)]">{p1Int}</div>
             
             <div className="absolute inset-0 z-10 overflow-hidden pt-10" style={{ clipPath: 'polygon(0 0, 100% 0, calc(100% - 100px) 100%, 0 100%)' }}>
@@ -256,7 +265,6 @@ export default function StageScreenPage() {
               <motion.div animate={{ x: [-45, 45, -45], y: [-20, 20, -20], scale: [1.1, 0.95, 1.1], opacity: [0.2, 0.4, 0.2] }} transition={{ duration: 50, repeat: Infinity, ease: 'easeInOut' }} className="absolute bottom-[-10%] left-[0%] w-[1000px] h-[1000px] mix-blend-screen" style={{ backgroundImage: "url('/cloud-right.png')", backgroundSize: 'contain', backgroundRepeat: 'no-repeat', backgroundPosition: 'center', filter: 'blur(10px)' }} />
             </div>
             
-            {/* 💡 修正：向左微調給予呼吸空間 (補償斜體偏移) */}
             <div className="absolute right-[80px] top-[8%] text-[450px] font-black italic text-red-400/30 leading-none pointer-events-none z-0 tracking-tighter drop-shadow-[0_0_30px_rgba(248,113,113,0.4)]">{p2Int}</div>
             
             <div className="absolute inset-0 z-10 overflow-hidden pt-10" style={{ clipPath: 'polygon(100px 0, 100% 0, 100% 100%, 0 100%)' }}>
@@ -288,7 +296,6 @@ export default function StageScreenPage() {
           {match.tournament_name && <div className="text-sm font-bold text-zinc-400 tracking-[0.2em] mt-1 uppercase">{match.tournament_name}</div>}
         </div>
 
-        {/* 💡 修正：完美置中 VS 標誌 (使用精確的 left 座標) */}
         <div className="absolute left-[968px] top-[486px] -translate-x-1/2 -translate-y-1/2 z-40">
           <div className="rounded-full p-[4px] bg-gradient-to-br from-yellow-300 via-yellow-500 to-yellow-700 shadow-[0_0_40px_rgba(234,179,8,0.6)]">
             <div className="bg-black text-white italic font-black text-6xl rounded-full w-28 h-28 flex items-center justify-center">VS</div>
@@ -307,11 +314,13 @@ export default function StageScreenPage() {
           {match.show_lottery && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 z-50 bg-black/85 backdrop-blur-lg flex flex-col items-center justify-center font-sans overflow-hidden">
               <motion.div initial={{ scale: 0.9, opacity: 0, y: 30 }} animate={{ scale: 1, opacity: 1, y: 0 }} transition={{ type: "spring", bounce: 0.4 }} className="bg-gradient-to-b from-[#111] to-black border border-yellow-500/30 p-12 rounded-[2rem] shadow-[0_0_100px_rgba(250,204,21,0.2)] relative flex flex-col items-center min-w-[850px]">
-                <h2 className="text-yellow-400 text-6xl font-black italic tracking-[0.3em] uppercase mb-8 drop-shadow-[0_0_20px_rgba(250,204,21,0.6)]">WINNERS</h2>
+                {/* 💡 修正 2：標題加上彩帶符號 */}
+                <h2 className="text-yellow-400 text-6xl font-black italic tracking-[0.3em] uppercase mb-8 drop-shadow-[0_0_20px_rgba(250,204,21,0.6)]">🎉 WINNERS</h2>
                 
                 <div className="w-full relative h-[560px]">
                   {isSpinning ? (
                      <div className="absolute inset-0 w-full flex flex-col gap-4">
+                       {/* 💡 修正 3：跑動名單也只顯示名字，不顯示 Email */}
                        { spinningNames.slice(0, 4).map((name, i) => (
                          <div key={i} className="bg-zinc-900/50 border border-zinc-700 w-full rounded-2xl flex-1 flex items-center justify-center animate-pulse">
                            <span className="text-5xl font-black text-zinc-400 tracking-widest blur-[1px]">{name}</span>
