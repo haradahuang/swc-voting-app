@@ -4,6 +4,13 @@ import { supabase } from '@/lib/supabase';
 import { motion, AnimatePresence } from 'framer-motion';
 import QRCode from 'react-qr-code';
 
+// 💡 建立一個逼真的虛擬玩家姓名庫
+const realisticDummyNames = [
+  "Kevin.Lin", "Alex_99", "SarahChen", "JasonHuang", "Emily.W", 
+  "Tomy_123", "LiangLiang", "James.T", "Alice.Chang", "Chris_K", 
+  "Ryan.Wu", "David.C", "Jenny_T", "Michael.H", "Eric_Liao"
+];
+
 export default function StageScreenPage() {
   const [match, setMatch] = useState<any>(null);
   const [originUrl, setOriginUrl] = useState<string>('');
@@ -131,7 +138,7 @@ export default function StageScreenPage() {
       setHasSpun(true);
       supabase.from('user_votes').select('user_name').eq('match_id', match.id).limit(100).then(({ data }) => {
         const names = data?.map(d => d.user_name) || [];
-        setRealVoters(names); // 💡 只儲存真實名單
+        setRealVoters(names); 
       });
       setTimeout(() => { setIsSpinning(false); }, 4000);
     }
@@ -142,15 +149,14 @@ export default function StageScreenPage() {
     }
   }, [match?.show_lottery, hasSpun, match?.id]);
 
-  // 💡 修正 3：動畫跑動時，如果真實名單太少，混入假名單陪跑
+  // 💡 修正 1：混入看起來比較真實的假名單
   useEffect(() => {
     let interval: any;
     if (isSpinning) {
-      // 準備抽獎名單池 (如果不到 4 個，塞滿 20 個假名字進去攪拌)
       let pool = [...realVoters];
       if (pool.length < 4) {
-        const dummies = Array.from({ length: 20 }, (_, i) => `虛擬玩家${Math.floor(Math.random() * 9000) + 1000}`);
-        pool = [...pool, ...dummies];
+        // 如果真實名單不足，加入預設的真實感虛擬名字
+        pool = [...pool, ...realisticDummyNames];
       }
       
       interval = setInterval(() => {
@@ -186,13 +192,13 @@ export default function StageScreenPage() {
   if (maxNameLen >= 8) nameTextClass = "text-[70px] mb-4 leading-none";
   else if (maxNameLen >= 5) nameTextClass = "text-[90px] mb-3 leading-none";
 
-  // 💡 修正 1：遮蔽 Email 前綴 3 碼
+  // 💡 修正 2：同步 Stream 頁面的精準遮蔽邏輯
   const maskEmail = (email: string) => {
     if (!email) return '';
     const [name, domain] = email.split('@');
-    if (!domain) return email; // 預防不是完整信箱格式的資料
-    const visibleName = name.length > 3 ? name.substring(0, 3) : name.substring(0, 1);
-    return `${visibleName}***@${domain}`;
+    if (!domain) return email;
+    if (name.length <= 3) return `${name}***@${domain}`;
+    return `${name.substring(0, 3)}***${name.substring(6)}@${domain}`;
   };
 
   const currentWinners = match.lottery_winners?.slice(lotteryPage * 4, (lotteryPage * 4) + 4) || [];
@@ -314,13 +320,11 @@ export default function StageScreenPage() {
           {match.show_lottery && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 z-50 bg-black/85 backdrop-blur-lg flex flex-col items-center justify-center font-sans overflow-hidden">
               <motion.div initial={{ scale: 0.9, opacity: 0, y: 30 }} animate={{ scale: 1, opacity: 1, y: 0 }} transition={{ type: "spring", bounce: 0.4 }} className="bg-gradient-to-b from-[#111] to-black border border-yellow-500/30 p-12 rounded-[2rem] shadow-[0_0_100px_rgba(250,204,21,0.2)] relative flex flex-col items-center min-w-[850px]">
-                {/* 💡 修正 2：標題加上彩帶符號 */}
                 <h2 className="text-yellow-400 text-6xl font-black italic tracking-[0.3em] uppercase mb-8 drop-shadow-[0_0_20px_rgba(250,204,21,0.6)]">🎉 WINNERS</h2>
                 
                 <div className="w-full relative h-[560px]">
                   {isSpinning ? (
                      <div className="absolute inset-0 w-full flex flex-col gap-4">
-                       {/* 💡 修正 3：跑動名單也只顯示名字，不顯示 Email */}
                        { spinningNames.slice(0, 4).map((name, i) => (
                          <div key={i} className="bg-zinc-900/50 border border-zinc-700 w-full rounded-2xl flex-1 flex items-center justify-center animate-pulse">
                            <span className="text-5xl font-black text-zinc-400 tracking-widest blur-[1px]">{name}</span>
