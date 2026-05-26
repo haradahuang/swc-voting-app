@@ -44,6 +44,8 @@ export default function StageScreenPage() {
       
       winBgmRef.current = new Audio('/win.mp3');
       winBgmRef.current.loop = true;
+      // 💡 在這裡補上這行，控制得獎音樂音量 (1.0 是全滿，0.95 是降 5%)
+      winBgmRef.current.volume = 0.95;
     }
 
     return () => {
